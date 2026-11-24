@@ -1,6 +1,7 @@
 """Publish immutable batch fragments and their pinned strategy sources."""
 import hashlib
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -10,7 +11,7 @@ from pathlib import Path
 
 from . import evaluation, versions
 from .eval_plan import RUN_ID, publish_runtime, read_runtime_archive, shared_runtime, validate_manifest, version_ids
-from .eval_store import database, read_manifest
+from .eval_store import database, read_manifest, shard_lock, worker_lock
 from .workspace import read_json, write_json
 
 PART_BYTES = 32 * 1024 * 1024
@@ -95,12 +96,16 @@ def publish(root, run_id):
             key = hashlib.file_digest(f, "sha256").hexdigest()
         fragment = _store_fragment(payload, dest, key)
     write_json(dest / "manifest.json", manifest)
+    from .catalog import project_labels
+    labels_path = dest / (key + ".projects.json")
+    if not labels_path.exists():
+        write_json(labels_path, project_labels(root, ids))
     return {"run_id": run_id, "versions": sorted(ids), "completed": result["completed"],
             "fragment": str(fragment.relative_to(root)), "runtime": str(runtime.relative_to(root)) if runtime else None,
             "state": "ready_for_git"}
 
 
-def restore(root, run_id):
+def restore(root, run_id, *, digests=None):
     if not RUN_ID.fullmatch(run_id):
         raise ValueError("批次 ID 格式错误")
     dest = root / "published/runs" / run_id
@@ -114,6 +119,8 @@ def restore(root, run_id):
     if "source_sha256" in engine:
         read_runtime_archive(shared_runtime(root, engine), engine)
     files = _fragments(dest)
+    if digests is not None:
+        files = [path for path in files if path.name.split(".")[0] in digests]
     if not files:
         raise ValueError("找不到批次结果文件")
     for fragment in files:
@@ -130,14 +137,20 @@ def list_published(root):
     return [f.parent.name for f in sorted((root / "published/runs").glob("run-*/manifest.json"))]
 
 
-def list_remote(root):
-    refs = _git(root, "ls-remote", "--heads", "origin", "refs/heads/experiments/*")
-    ids = set()
+def _remote_refs(root, run_id="*"):
+    refs = _git(root, "ls-remote", "--heads", "origin", f"refs/heads/experiments/{run_id}/*")
+    entries = {}
     for line in refs.splitlines():
-        parts = line.split()[1].split("/")
-        if len(parts) == 5 and RUN_ID.fullmatch(parts[3]):
-            ids.add(parts[3])
-    return sorted(ids)
+        sha, ref = line.split()
+        parts = ref.split("/")
+        if (parts[:3] == ["refs", "heads", "experiments"] and len(parts) == 5
+                and RUN_ID.fullmatch(parts[3]) and re.fullmatch(r"[a-f0-9]{64}", parts[4])):
+            entries[ref] = sha
+    return entries
+
+
+def list_remote(root):
+    return sorted({ref.split("/")[3] for ref in _remote_refs(root)})
 
 
 def _stop_remote(process):
@@ -221,6 +234,9 @@ def push(root, run_id, *, prepared=None):
     if prepared is not None:
         _verify_prepared_fragment(root, fragment)
     paths = [fragment, fragment.with_name("manifest.json")]
+    labels = fragment.with_name(fragment.name.split(".")[0] + ".projects.json")
+    if (root / labels).is_file():
+        paths.append(labels)
     if batch["runtime"] is not None:
         paths.append(Path(batch["runtime"]))
     paths.extend(Path("published/versions") / v for v in batch["versions"] if v != "baseline")
@@ -256,17 +272,28 @@ def push(root, run_id, *, prepared=None):
 def fetch(root, run_id):
     if not RUN_ID.fullmatch(run_id):
         raise ValueError("批次 ID 格式错误")
-    refs = _git(root, "ls-remote", "--heads", "origin", f"refs/heads/experiments/{run_id}/*")
+    refs = _remote_refs(root, run_id)
     if not refs:
         raise ValueError("远端没有这个已发布批次")
+    return _fetch_refs(root, run_id, refs)
+
+
+def _fetch_refs(root, run_id, refs):
+    with worker_lock(root / ".local/sync", run_id) as locked:
+        if not locked:
+            raise ValueError(f"正在接收批次 {run_id}")
+        return _import_refs(root, run_id, refs)
+
+
+def _import_refs(root, run_id, refs):
     scratch = root / ".local"
     scratch.mkdir(exist_ok=True)
-    for line in refs.splitlines():
-        sha, ref = line.split()
-        _git(root, "fetch", "origin", ref)
+    for ref, sha in refs.items():
+        digest = ref.rsplit("/", 1)[1]
+        _git(root, "fetch", "--no-tags", "--no-recurse-submodules", "origin", ref)
         with tempfile.TemporaryDirectory(dir=scratch) as temp:
             checkout = Path(temp) / "fetch"
-            _git(root, "worktree", "add", "--quiet", "--detach", str(checkout), sha)
+            _git(root, "-c", "core.hooksPath=/dev/null", "worktree", "add", "--quiet", "--detach", str(checkout), sha)
             try:
                 relative = Path("published/runs") / run_id
                 manifest = read_json(checkout / relative / "manifest.json")
@@ -303,7 +330,14 @@ def fetch(root, run_id):
                 if manifest_path.exists() and read_json(manifest_path) != manifest:
                     raise ValueError(f"远端清单与本机批次冲突 {run_id}")
                 write_json(manifest_path, manifest)
-                for source in _fragments(checkout / relative):
+                labels = checkout / relative / (digest + ".projects.json")
+                if labels.is_file():
+                    from .catalog import validate_project_labels
+                    write_json(dest / labels.name, validate_project_labels(read_json(labels), ids))
+                fragments = [p for p in _fragments(checkout / relative) if p.name.split(".")[0] == digest]
+                if len(fragments) != 1:
+                    raise ValueError(f"远端分支缺少对应结果片段 {ref}")
+                for source in fragments:
                     target = dest / source.name
                     if not target.exists():
                         if source.suffix == ".parts":
@@ -317,4 +351,31 @@ def fetch(root, run_id):
                         Path(out.name).replace(target)
             finally:
                 _git(root, "worktree", "remove", str(checkout))
-    return restore(root, run_id)
+    result = restore(root, run_id, digests={ref.rsplit("/", 1)[1] for ref in refs})
+    with database(root) as db:
+        db.executemany("INSERT OR REPLACE INTO received_refs VALUES (?, ?)", refs.items())
+    return result
+
+
+def receive_updates(root):
+    with shard_lock(root / ".local/sync", "receive") as acquired:
+        if not acquired:
+            return []
+        refs = _remote_refs(root)
+        with database(root) as db:
+            received = dict(db.execute("SELECT ref, sha FROM received_refs"))
+        pending = {}
+        for ref, sha in refs.items():
+            if received.get(ref) != sha:
+                pending.setdefault(ref.split("/")[3], {})[ref] = sha
+        failures = []
+        updated = []
+        for run_id, changes in pending.items():
+            try:
+                _fetch_refs(root, run_id, changes)
+                updated.append(run_id)
+            except (OSError, ValueError, RuntimeError) as error:
+                failures.append(f"{run_id} {error}")
+        if failures:
+            raise RuntimeError("\n".join(failures))
+        return updated

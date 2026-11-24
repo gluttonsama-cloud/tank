@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -11,7 +12,7 @@ import traceback
 from pathlib import Path
 from uuid import uuid4
 
-from .eval_store import database, local_dir, shard_lock, worker_lock
+from .eval_store import cached_matches, database, local_dir, shard_lock, worker_lock
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS auto_publications (
@@ -26,6 +27,21 @@ CREATE TABLE IF NOT EXISTS auto_publications (
 )
 """
 START_TIMEOUT = 30
+RETRY_DELAYS = (5 * 60, 15 * 60, 45 * 60)
+MAX_RECONCILED = 4
+_REMOTE_TIMEOUT = re.compile(r"Git (?:ls-remote|push|fetch) 超过 [\d.e+\-]+ 秒")
+_TEMPORARY_NETWORK = re.compile(
+    r"connection (?:timed out|reset by peer)|operation timed out|"
+    r"network is unreachable|no route to host|temporary failure in name resolution|"
+    r"requested URL returned error: (?:408|429|500|502|503|504)\b",
+    re.IGNORECASE,
+)
+_PERSISTENT_GIT = re.compile(
+    r"authentication failed|permission denied|access denied|host key verification failed|"
+    r"repository not found|could not read username|terminal prompts disabled|"
+    r"requested URL returned error: (?:401|403|404)\b",
+    re.IGNORECASE,
+)
 
 
 def register(db, run_id):
@@ -73,6 +89,16 @@ def status(root, db, run_id):
     return _summary(row)
 
 
+def _retry_due(row, now):
+    attempts, error = row["attempts"], row["error"]
+    return (
+        row["state"] == "failed" and 1 <= attempts <= len(RETRY_DELAYS)
+        and bool(error) and now - row["updated_at"] >= RETRY_DELAYS[attempts - 1]
+        and not _PERSISTENT_GIT.search(error)
+        and (_REMOTE_TIMEOUT.fullmatch(error) or _TEMPORARY_NETWORK.search(error)) is not None
+    )
+
+
 def _spawn(root, run_id, token):
     folder = _folder(root, run_id)
     folder.mkdir(parents=True, exist_ok=True)
@@ -85,13 +111,15 @@ def _spawn(root, run_id, token):
         )
 
 
-def enqueue(root, run_id, *, retry=False):
+def enqueue(root, run_id, *, retry=False, automatic=False):
     root = root.resolve()
     with database(root) as db:
         db.execute("BEGIN IMMEDIATE")
         share = status(root, db, run_id)
         eligible = {"waiting", "failed"} if retry else {"waiting"}
         if share is None or share["state"] not in eligible:
+            return share
+        if automatic and share["state"] == "failed" and not _retry_due(share, time.time()):
             return share
         token = uuid4().hex
         db.execute(
@@ -105,6 +133,38 @@ def enqueue(root, run_id, *, retry=False):
         _finish(root, run_id, token, "failed", error=str(error))
     with database(root) as db:
         return status(root, db, run_id)
+
+
+def reconcile(root):
+    """Check registered sharing requests without touching unshared evaluation drafts."""
+    from .evaluation import _actual_matches
+    from .eval_plan import match_specs
+
+    now = time.time()
+    ready = []
+    with database(root) as db:
+        db.execute(SCHEMA)
+        rows = db.execute(
+            """SELECT p.*, r.manifest FROM auto_publications AS p JOIN runs AS r ON r.run_id = p.run_id
+               WHERE p.state = 'waiting' OR (p.state = 'failed' AND p.attempts BETWEEN 1 AND ? AND p.updated_at <= ?)
+               ORDER BY p.updated_at, p.run_id""",
+            (len(RETRY_DELAYS), now - RETRY_DELAYS[0]),
+        )
+        for row in rows:
+            retry = row["state"] == "failed"
+            if retry and not _retry_due(row, now):
+                continue
+            manifest = json.loads(row["manifest"])
+            specs = match_specs(manifest)
+            if len(_actual_matches(manifest, cached_matches(db, specs, summary=True))) != len(specs):
+                continue
+            ready.append((row["run_id"], retry))
+            if len(ready) >= MAX_RECONCILED:
+                break
+    return [
+        {"run_id": run_id, "sharing": enqueue(root, run_id, retry=retry, automatic=True)}
+        for run_id, retry in ready
+    ]
 
 
 def _finish(root, run_id, token, state, *, branch=None, error=None):

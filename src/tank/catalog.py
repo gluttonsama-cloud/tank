@@ -105,20 +105,107 @@ def _training(root, projects_by_id, scripts):
     return job_projects
 
 
-def _snapshots(root, projects_by_id, sources, scripts, job_projects):
+def _label_text(value):
+    return isinstance(value, str) and bool(value.strip()) and all(ord(char) >= 32 and char != "\x7f" for char in value)
+
+
+def validate_project_labels(payload, version_ids):
+    """Validate display-only project metadata against the batch's snapshot set."""
+    if not isinstance(payload, dict):
+        raise ValueError("项目归属必须是快照 ID 到项目列表的映射")
+    allowed = set(version_ids) - {"baseline"}
+    for version_id, labels in payload.items():
+        if version_id not in allowed:
+            raise ValueError(f"项目归属包含批次外快照 {version_id}")
+        if not isinstance(labels, list) or not labels:
+            raise ValueError(f"快照 {version_id} 的项目归属必须是非空列表")
+        seen = set()
+        for label in labels:
+            if not isinstance(label, dict) or label.keys() != {"id", "name", "kind"}:
+                raise ValueError(f"快照 {version_id} 的项目归属需要 id、name、kind")
+            for field in ("id", "name"):
+                if not _label_text(label[field]):
+                    raise ValueError(f"快照 {version_id} 的项目 {field} 无效")
+            kind = label["kind"]
+            if not isinstance(kind, str) or kind not in KINDS:
+                raise ValueError(f"快照 {version_id} 的项目 kind 无效")
+            if label["id"] in seen:
+                raise ValueError(f"快照 {version_id} 的项目 ID 重复 {label['id']}")
+            seen.add(label["id"])
+    return payload
+
+
+def _label_files(directory):
+    legacy = directory / "projects.json"
+    if legacy.is_file():
+        yield legacy
+    for path in sorted(directory.glob("*.projects.json")):
+        fragment = path.name.removesuffix(".projects.json")
+        if eval_plan.HASH.fullmatch(fragment) and (
+            (directory / f"{fragment}.jsonl.gz").is_file() or (directory / f"{fragment}.parts").is_dir()
+        ):
+            yield path
+
+
+def _published_labels(root, selected):
+    if not selected:
+        return {}
+    labels_by_snapshot = defaultdict(dict)
+    for directory in sorted((root / "published/runs").glob("run-*")):
+        files = list(_label_files(directory))
+        if not files:
+            continue
+        manifest = read_json(directory / "manifest.json")
+        eval_plan.validate_manifest(manifest)
+        if manifest["run_id"] != directory.name:
+            raise ValueError(f"项目归属的批次目录与清单不匹配 {directory.name}")
+        allowed = eval_plan.version_ids(manifest)
+        if selected.isdisjoint(allowed):
+            continue
+        for path in files:
+            payload = validate_project_labels(read_json(path), allowed)
+            for version_id in selected & payload.keys():
+                for label in payload[version_id]:
+                    labels_by_snapshot[version_id].setdefault(label["id"], label)
+    return labels_by_snapshot
+
+
+def _snapshot_records(root, selected):
+    if selected is None:
+        return versions.list_versions(root)
+    return [
+        {key: value for key, value in versions.describe(root, version_id).items() if key != "files"}
+        for version_id in sorted(selected)
+    ]
+
+
+def _snapshots(root, projects_by_id, sources, scripts, job_projects, selected):
     attached = defaultdict(list)
+    version_records = {}
     by_training_name = defaultdict(dict)
     for script, project in scripts.items():
         by_training_name[f"训练 {PurePosixPath(script).stem}"][project["id"]] = project
-    for snapshot in versions.list_versions(root):
+    snapshots = _snapshot_records(root, selected)
+    shared = _published_labels(root, {snapshot["id"] for snapshot in snapshots} - {"baseline"})
+    for snapshot in snapshots:
         version_id, name = snapshot["id"], snapshot["name"]
         if version_id == "baseline":
             continue
+        history = snapshot | {
+            "local": {"latest": None, "by_condition": []},
+            "official": {"best": None, "latest": None},
+        }
+        version_records[version_id] = history
         matches = dict(job_projects.get(version_id, ()))
         if name in sources:
             project = sources[name]
             matches[project["id"]] = project
-        elif not matches:
+        for label in shared.get(version_id, {}).values():
+            project_id = label["id"]
+            if project_id not in projects_by_id:
+                projects_by_id[project_id] = _project(project_id, label["name"], label["kind"])
+            matches[project_id] = projects_by_id[project_id]
+        if not matches:
             training_matches = by_training_name[name]
             if len(training_matches) == 1:
                 matches.update(training_matches)
@@ -127,13 +214,14 @@ def _snapshots(root, projects_by_id, sources, scripts, job_projects):
                 project = projects_by_id.setdefault(project_id, _project(project_id, name))
                 matches[project_id] = project
         for project in matches.values():
-            project["versions"].append(snapshot | {"project_id": project["id"]})
+            project["versions"].append(history | {"project_id": project["id"]})
             attached[version_id].append(project)
-    return attached
+    return attached, version_records
 
 
 def _condition_id(manifest):
-    scope = {key: manifest[key] for key in ("mode", "baseline", "engine", "timeout")}
+    scope = {key: manifest[key] for key in ("mode", "baseline", "engine")}
+    scope["timeout"] = float(manifest["timeout"])
     return "condition-" + digest(scope | {"suite_id": manifest["suite"]["suite_id"]})
 
 
@@ -161,7 +249,12 @@ def _comparison_rows(root, run, revision):
     return rows
 
 
-def _local_results(root, project_records, attached):
+def _condition_quality(record):
+    complete = record["status"] == "completed" and record["scored_games"] == record["scheduled_games"]
+    return complete, record["scored_games"]
+
+
+def _local_results(root, project_records, attached, version_records):
     if not attached or not (root / ".local/eval/results.sqlite3").is_file():
         return
     with database(root) as db:
@@ -175,24 +268,34 @@ def _local_results(root, project_records, attached):
         ).fetchall()
     revision = _comparison_revision()
     best = defaultdict(dict)
+    versions_by_condition = defaultdict(dict)
     for run in runs:
         manifest = json.loads(run["manifest"])
         if attached.keys().isdisjoint(manifest["candidates"]):
             continue
         condition_id = _condition_id(manifest)
         for row in _comparison_rows(root, run, revision):
-            if not row["scored_games"]:
+            version_id = row["candidate"]
+            if version_id not in attached or not row["scored_games"]:
                 continue
             record = {
-                "version_id": row["candidate"], "run_id": run["run_id"], "created_at": run["created_at"],
+                "version_id": version_id, "run_id": run["run_id"], "created_at": run["created_at"],
                 "suite": manifest["suite"]["name"], "suite_id": manifest["suite"]["suite_id"],
+                "rules_version": manifest["suite"]["rules_version"],
                 "mode": manifest["mode"], "baseline": manifest["baseline"], "timeout": manifest["timeout"],
                 "opponents": [manifest["baseline"]] if manifest["mode"] == "direct" else manifest["suite"]["opponents"],
                 "condition_id": condition_id, "status": row["status"],
                 "total_score": row["total_score"], "scored_games": row["scored_games"],
                 "scheduled_games": row["scheduled_games"],
             }
-            for project in attached.get(row["candidate"], ()):
+            history = version_records[version_id]["local"]
+            if history["latest"] is None:
+                history["latest"] = record
+            version_conditions = versions_by_condition[version_id]
+            previous = version_conditions.get(condition_id)
+            if previous is None or _condition_quality(record) > _condition_quality(previous):
+                version_conditions[condition_id] = record
+            for project in attached[version_id]:
                 local = project["local"]
                 if local["latest"] is None:
                     local["latest"] = record
@@ -203,6 +306,8 @@ def _local_results(root, project_records, attached):
                         conditions[condition_id] = record
     for project_id, conditions in best.items():
         project_records[project_id]["local"]["best_by_condition"] = list(conditions.values())
+    for version_id, conditions in versions_by_condition.items():
+        version_records[version_id]["local"]["by_condition"] = list(conditions.values())
 
 
 def _raw_submission(path):
@@ -216,7 +321,17 @@ def _raw_submission(path):
     } | (_complete_score(data) or {})
 
 
-def _official_results(root, attached):
+def _consider_official(official, item):
+    latest, best = official["latest"], official["best"]
+    if latest is None or (item["created_at"], item["id"]) > (latest["created_at"], latest["id"]):
+        official["latest"] = item
+    if item["score"] is not None and (
+        best is None or (item["score"], -item["id"]) > (best["score"], -best["id"])
+    ):
+        official["best"] = item
+
+
+def _official_results(root, attached, version_records):
     if not attached:
         return
     folder = root / ".local/online"
@@ -247,22 +362,40 @@ def _official_results(root, attached):
             key = record["team_id"], record["id"]
             records[key] = record
     for item in records.values():
-        for project in attached.get(item["version_id"], ()):
-            official = project["official"]
-            latest, best = official["latest"], official["best"]
-            if latest is None or (item["created_at"], item["id"]) > (latest["created_at"], latest["id"]):
-                official["latest"] = item
-            if item["score"] is not None and (
-                best is None or (item["score"], -item["id"]) > (best["score"], -best["id"])
-            ):
-                official["best"] = item
+        version_id = item["version_id"]
+        if version_id not in attached:
+            continue
+        _consider_official(version_records[version_id]["official"], item)
+        for project in attached[version_id]:
+            _consider_official(project["official"], item)
+
+
+def _strategy_index(root, selected=None):
+    projects_by_id, sources, scripts = _definitions(root)
+    job_projects = _training(root, projects_by_id, scripts)
+    attached, version_records = _snapshots(root, projects_by_id, sources, scripts, job_projects, selected)
+    return projects_by_id, attached, version_records
+
+
+def project_labels(root: Path, version_ids) -> dict:
+    """Export display-only ownership for the snapshots used by a batch."""
+    selected = set(version_ids) - {"baseline"}
+    if not selected:
+        return {}
+    _, attached, _ = _strategy_index(root, selected)
+    payload = {
+        version_id: [
+            {key: project[key] for key in ("id", "name", "kind")}
+            for project in sorted(attached[version_id], key=lambda project: project["id"])
+        ]
+        for version_id in sorted(selected)
+    }
+    return validate_project_labels(payload, selected)
 
 
 def projects(root: Path) -> list[dict]:
     """Read a project inventory from local records without starting work or contacting the contest website."""
-    projects_by_id, sources, scripts = _definitions(root)
-    job_projects = _training(root, projects_by_id, scripts)
-    attached = _snapshots(root, projects_by_id, sources, scripts, job_projects)
-    _local_results(root, projects_by_id, attached)
-    _official_results(root, attached)
+    projects_by_id, attached, version_records = _strategy_index(root)
+    _local_results(root, projects_by_id, attached, version_records)
+    _official_results(root, attached, version_records)
     return sorted(projects_by_id.values(), key=lambda project: (project["name"], project["id"]))

@@ -1,5 +1,6 @@
 import json
 import os
+import sqlite3
 import threading
 import time
 import webbrowser
@@ -11,7 +12,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from seedcup.client.viewer import TYPES, WEB, static_file
 
-from . import evaluation, versions
+from . import evaluation, publication, sync, versions
 from .cli import execute, list_runs, parser
 from .eval_plan import list_suites
 from .workspace import read_json
@@ -37,7 +38,23 @@ class WorkbenchHTTP(ThreadingHTTPServer):
         self.next_sync = 0
         self.sync_error = None
         self.sync_running = False
+        self.stop_sync = threading.Event()
+        self.team_sync = {"last_received_at": None, "error": None}
         super().__init__(addr, Handler)
+
+    def sync_loop(self, interval=300):
+        while not self.stop_sync.is_set():
+            self.refresh_scores()
+            errors = []
+            for operation in (publication.reconcile, sync.receive_updates):
+                try:
+                    operation(self.root)
+                    if operation is sync.receive_updates:
+                        self.team_sync["last_received_at"] = time.time()
+                except (ValueError, OSError, RuntimeError, sqlite3.Error) as error:
+                    errors.append(str(error))
+            self.team_sync["error"] = "\n".join(errors) or None
+            self.stop_sync.wait(interval)
 
     def refresh_scores(self):
         if not (os.environ.get("SEEDCUP_USERNAME") and os.environ.get("SEEDCUP_PASSWORD")):
@@ -93,7 +110,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._reply({"application": "tank", "root": str(root.resolve())})
             if url.path == "/api/overview":
                 self.server.refresh_scores()
-                return self._reply(overview(root) | {"sync_error": self.server.sync_error,
+                return self._reply(overview(root) | {"team_sync": dict(self.server.team_sync),
+                                                     "sync_error": self.server.sync_error,
                                                      "score_sync_running": self.server.sync_running})
             if url.path == "/replay":
                 case = parse_qs(url.query)["case"][0]
@@ -147,4 +165,9 @@ def serve(root, port=8765, open_browser=False):
         print(url, flush=True)
         if open_browser:
             threading.Timer(0.1, partial(webbrowser.open, url)).start()
-        server.serve_forever()
+        worker = threading.Thread(target=server.sync_loop, name="team-sync", daemon=True)
+        worker.start()
+        try:
+            server.serve_forever()
+        finally:
+            server.stop_sync.set()

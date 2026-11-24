@@ -46,6 +46,10 @@ CREATE TABLE IF NOT EXISTS screens (
     screen_id TEXT PRIMARY KEY,
     record TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS received_refs (
+    ref TEXT PRIMARY KEY,
+    sha TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS queued_shards (
     run_id TEXT NOT NULL,
     shard INTEGER NOT NULL,

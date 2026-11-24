@@ -24,6 +24,8 @@
         <section id="strategy" aria-labelledby="strategy-title">
             <header class="page-header"><h1 id="strategy-title">策略</h1></header>
 
+            <p id="team-sync-error" class="sync-warning failure" role="status" hidden>团队同步失败</p>
+
             <section class="team-score panel" aria-labelledby="team-score-title">
                 <div>
                     <h2 id="team-score-title">官网榜单最高总分</h2>
@@ -44,7 +46,7 @@
                 </div>
             </details>
 
-            <details class="panel utility-panel">
+            <details id="official-operations" class="panel utility-panel">
                 <summary class="utility-toggle">官网操作</summary>
                 <div class="form-row">
                     <label>策略版本<select id="online-version"></select></label>

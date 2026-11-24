@@ -5,11 +5,13 @@ const state = {
     overview: null,
     runId: "",
     runSummary: null,
+    runCandidate: null,
     run: null,
     poll: null,
     strategyPoll: null,
     strategyRequest: 0,
     projectsView: "",
+    historyConditions: new Map(),
     trainingView: "",
     queueDeadline: 0,
     resultRequest: 0,
@@ -106,6 +108,7 @@ function addRow(body, cells) {
         row.append(cell);
     }
     body.append(row);
+    return row;
 }
 
 function emptyTable(body, columns, text) {
@@ -117,7 +120,7 @@ function emptyTable(body, columns, text) {
 }
 
 function renderTeamScore() {
-    const { team_scores, sync_error, score_sync_running } = state.overview;
+    const { team_scores, sync_error, score_sync_running, team_sync } = state.overview;
     const best = team_scores?.best;
     $("team-score").textContent = best ? score.format(best.score) : "—";
     const detail = [best ? `${best.games} 局 · 四档人机` : "40 局 · 四档人机 · 暂无成绩"];
@@ -125,6 +128,8 @@ function renderTeamScore() {
     else if (sync_error) detail.push("同步失败");
     $("team-score-meta").textContent = detail.join(" · ");
     $("team-score-meta").title = sync_error || "";
+    $("team-sync-error").hidden = !team_sync?.error;
+    $("team-sync-error").title = team_sync?.error || "";
 }
 
 function projectMetric(label, total, detail) {
@@ -138,35 +143,162 @@ function projectMetric(label, total, detail) {
     return metric;
 }
 
+function localResultLink(record, text, className = "") {
+    const link = element("a", text, className);
+    link.href = `#results?${new URLSearchParams({ run: record.run_id, candidate: record.version_id })}`;
+    link.addEventListener("click", () => { state.runSummary = record; });
+    return link;
+}
+
+function officialRecordButton(record) {
+    const button = element("button", "官网记录", "history-link");
+    button.addEventListener("click", () => {
+        $("official-operations").open = true;
+        showOnline("status", { id: record.id, evaluation: record });
+        $("online-output").scrollIntoView({ block: "nearest" });
+    });
+    return button;
+}
+
+function historyVersionCell(item) {
+    const label = element("div", "", "history-version");
+    const version = element("strong", item.id.slice(2, 10));
+    version.title = item.id;
+    label.append(version);
+    if (item.note) label.append(element("span", item.note, "history-note"));
+    const actions = element("div", "", "history-actions");
+    const test = element("button", "测试此版", "history-link");
+    test.addEventListener("click", () => selectForTest([item.id]));
+    actions.append(test);
+    if (item.id === state.overview.main) actions.append(element("span", "主力版", "tag"));
+    else {
+        const main = element("button", "设为主力", "history-link");
+        main.addEventListener("click", () => withButton(main, async () => {
+            await command("snapshot", "main", item.id);
+            await loadOverview(true);
+            showNotice(`已设为主力版 · ${versionLabel(item.id)}`);
+        }));
+        actions.append(main);
+    }
+    label.append(actions);
+    return label;
+}
+
+function historyOfficialCell(official, bestScore) {
+    const { best, latest } = official;
+    const cell = element("div", "", "history-score");
+    if (best) {
+        cell.append(element("strong", score.format(best.score)),
+            element("span", `${best.games} 局${best.score === bestScore ? " · 最高" : ""}`, "muted"),
+            officialRecordButton(best));
+    } else if (latest) {
+        cell.append(element("span", statuses[latest.status] || latest.status, "muted"), officialRecordButton(latest));
+    } else cell.append(element("span", "暂无官网成绩", "muted"));
+    return cell;
+}
+
+function completeResult(record) {
+    return record?.status === "completed" && record.scored_games === record.scheduled_games;
+}
+
+function historyLocalCell(record, selected, highest) {
+    const cell = element("div", "", "history-score");
+    if (!record) {
+        cell.append(element("span", selected ? "此条件暂无成绩" : "暂无本地成绩", "muted"));
+        return cell;
+    }
+    const detail = `${record.scored_games} / ${record.scheduled_games} 局`;
+    cell.append(element("strong", record.total_score === null ? "—" : score.format(record.total_score)),
+        element("span", completeResult(record) ? detail : `${detail} · 未完成`, "muted"));
+    if (completeResult(record)) {
+        const delta = record.total_score - highest;
+        cell.append(delta === 0 ? element("span", "最高", "tag") : element("span", `比最高 ${score.format(delta)}`, "muted"));
+    }
+    cell.append(localResultLink(record, "本地结果", "history-link"));
+    return cell;
+}
+
+function conditionOptions(conditions) {
+    const descriptions = conditions.map((record) => {
+        const baseline = versionLabel(record.baseline);
+        const opponent = record.opponents.map((id) => versionLabel(id)).join("、");
+        const match = record.mode === "direct" ? `交手 ${baseline}` : `陪练 ${opponent} · 基准 ${baseline}`;
+        return `${suiteLabel(record.suite)} · ${record.scheduled_games} 局 · ${match}`;
+    });
+    const detailed = descriptions.map((label, index) => {
+        const condition = conditions[index];
+        if (descriptions.indexOf(label) === descriptions.lastIndexOf(label)) return label;
+        return `${label} · ${condition.rules_version} · 限时 ${condition.timeout} 秒`;
+    });
+    return detailed.map((label, index) => {
+        const id = conditions[index].condition_id;
+        return new Option(detailed.indexOf(label) === detailed.lastIndexOf(label) ? label : `${label} · ${id.slice(-8)}`, id);
+    });
+}
+
+function historyContents(project) {
+    const content = element("div", "");
+    const conditions = new Map();
+    for (const item of project.versions) {
+        for (const record of item.local.by_condition) conditions.set(record.condition_id, record);
+    }
+    const select = document.createElement("select");
+    if (conditions.size) {
+        const saved = state.historyConditions.get(project.id);
+        const recent = project.local.best_by_condition[0] || project.local.latest;
+        select.append(...conditionOptions([...conditions.values()]));
+        select.value = conditions.has(saved) ? saved : recent.condition_id;
+        const label = element("label", "本地测试条件", "history-filter");
+        label.append(select);
+        content.append(label);
+    }
+
+    const scroller = element("div", "", "table-scroll");
+    const table = element("table", "", "history-table");
+    const headers = table.createTHead().insertRow();
+    for (const title of ["版本", "官网最高总分", "本地实测总分"]) {
+        const header = element("th", title);
+        header.scope = "col";
+        headers.append(header);
+    }
+    const body = table.createTBody();
+    function render() {
+        const selected = select.value;
+        state.historyConditions.set(project.id, selected);
+        const rows = project.versions.map((item) => {
+            const record = item.local.by_condition.find((value) => value.condition_id === selected);
+            return { item, record, rank: completeResult(record) ? 0 : record ? 1 : 2 };
+        });
+        rows.sort((left, right) => left.rank - right.rank || (left.rank === 0 ? right.record.total_score - left.record.total_score : 0));
+        const highest = rows[0].rank === 0 ? rows[0].record.total_score : null;
+        body.replaceChildren();
+        for (const { item, record } of rows) addRow(body, [historyVersionCell(item),
+            historyOfficialCell(item.official, project.official.best?.score), historyLocalCell(record, selected, highest)]);
+    }
+    select.addEventListener("change", render);
+    render();
+    scroller.append(table);
+    content.append(scroller);
+    return content;
+}
+
 function versionHistory(project, expanded) {
     const history = element("details", "", "project-history");
     history.dataset.projectId = project.id;
     history.open = expanded;
     history.append(element("summary", `历史版本 · ${project.versions.length}`, "utility-toggle"));
-    const list = element("ul", "", "history-list");
-    for (const item of project.versions) {
-        const row = element("li", "", "history-row");
-        const label = element("div", versionLabel(item.id, project));
-        label.title = item.id;
-        if (item.note) label.append(element("span", item.note, "history-note"));
-        const actions = element("div", "", "button-row");
-        const test = element("button", "测试此版本");
-        test.addEventListener("click", () => selectForTest([item.id]));
-        actions.append(test);
-        if (item.id === state.overview.main) actions.append(element("span", "主力版", "tag"));
-        else {
-            const main = element("button", "设为主力");
-            main.addEventListener("click", () => withButton(main, async () => {
-                await command("snapshot", "main", item.id);
-                await loadOverview(true);
-                showNotice(`已设为主力版 · ${versionLabel(item.id)}`);
-            }));
-            actions.append(main);
+    let content = null;
+    const sync = () => {
+        if (history.open && !content) {
+            content = historyContents(project);
+            history.append(content);
+        } else if (!history.open && content) {
+            content.remove();
+            content = null;
         }
-        row.append(label, actions);
-        list.append(row);
-    }
-    history.append(list);
+    };
+    history.addEventListener("toggle", sync);
+    if (expanded) sync();
     return history;
 }
 
@@ -191,6 +323,12 @@ function renderProjects() {
             `${suiteLabel(latest.suite)} · ${latest.scored_games} / ${latest.scheduled_games} 局${latest.status === "completed" ? "" : " · 未完成"}`,
             `${latest.mode === "direct" ? "对手" : "陪练"} ${latest.opponents.map((id) => versionLabel(id)).join("、")}`,
         ] : ["暂无测试"];
+        if (completeResult(latest)) {
+            const comparable = project.local.best_by_condition.find((record) => record.condition_id === latest.condition_id);
+            if (comparable && comparable.total_score > latest.total_score) {
+                localDetail.push(`比同条件最高低 ${score.format(comparable.total_score - latest.total_score)} 分`);
+            }
+        }
         metrics.append(projectMetric("官网最高总分", best ? best.score : null, officialDetail),
             projectMetric("最近本地实测总分", latest?.total_score ?? null, localDetail));
         card.append(header, metrics);
@@ -207,11 +345,7 @@ function renderProjects() {
             }));
             actions.append(test);
         }
-        if (latest) {
-            const result = element("button", "查看本地结果");
-            result.addEventListener("click", () => withButton(result, () => showRun(latest.run_id, false, latest)));
-            actions.append(result);
-        }
+        if (latest) actions.append(localResultLink(latest, "查看本地结果", "button-link"));
         if (actions.childElementCount) card.append(actions);
         if (project.versions.length) card.append(versionHistory(project, expanded.has(project.id)));
         container.append(card);
@@ -269,7 +403,7 @@ async function loadOverview(forceMain = false, page = null) {
     if (state.runSummary && !runs.some(({ run_id }) => run_id === state.runSummary.run_id)) runs.push(state.runSummary);
     if (!runs.some(({ run_id }) => run_id === state.runId)) state.runId = runs[0]?.run_id || "";
     selectOptions("run-select", runs.map((run) => [
-        run.run_id, `${suiteLabel(run.suite)} · ${timestamp.format(new Date(run.created_at * 1000))}`,
+        run.run_id, run.created_at ? `${suiteLabel(run.suite)} · ${timestamp.format(new Date(run.created_at * 1000))}` : "链接中的批次",
     ]), state.runId);
     $("refresh-results").disabled = !state.runId;
     $("no-runs").hidden = Boolean(state.runId);
@@ -378,6 +512,10 @@ function renderRun(run) {
     }
     if (run.failed) metadata.push(`失败 ${run.failed} 局${run.timed_out ? `（超时 ${run.timed_out} 局）` : ""}`);
     $("run-meta").textContent = metadata.join(" · ");
+    $("cases-title").textContent = state.runCandidate ? `对局明细 · ${versionLabel(state.runCandidate)}` : "对局明细";
+    if (state.runSummary?.run_id === run.run_id && !state.runSummary.created_at) {
+        $("run-select").selectedOptions[0].textContent = suiteLabel(run.suite.name);
+    }
     const active = ["queued", "running", "cancelling"].includes(run.status);
     const canResume = !active && run.status !== "completed" && run.pending > 0;
     const canRetry = !active && run.failed > 0;
@@ -403,13 +541,14 @@ function renderComparison(rows) {
         const delta = row.total_delta;
         const deltaLabel = delta == null ? "—" : `${delta > 0 ? "+" : ""}${score.format(delta)}`;
         const played = `${row.scored_games} / ${row.scheduled_games} 局`;
-        addRow(body, [
+        const entry = addRow(body, [
             versionText(row.candidate), element("strong", row.scored_games ? score.format(row.total_score) : "—", "result-score"),
             element("span", played, row.scored_games < row.scheduled_games ? "muted" : ""),
             element("span", deltaLabel, delta > 0 ? "positive" : delta < 0 ? "negative" : ""),
             row.completed_pairs ? percent.format(row.win_rate) : "—",
             element("span", `${row.completed_pairs} / ${row.total_pairs}`, row.missing_cases ? "failure" : ""),
         ]);
+        entry.classList.toggle("focused-result", row.candidate === state.runCandidate);
     }
 }
 
@@ -425,11 +564,13 @@ function renderCases(data) {
             replay.target = "_blank";
             replay.rel = "noopener";
         }
-        let label = row.won === undefined ? "待完成" : "已完成";
-        if (row.failures.length) label = row.failures.some((failure) => failure.kind === "timeout") ? "超时" : "失败";
+        const completed = row.score !== undefined;
+        const failure = completed ? null : row.failures.find((item) => item.case_id === row.case_id);
+        let label = completed ? "已完成" : "待完成";
+        if (failure) label = failure.kind === "timeout" ? "超时" : "失败";
         addRow(body, [versionText(row.candidate), versionText(row.opponent), row.seed,
-            row.side === "red" ? "红方" : "蓝方", row.score === undefined ? "—" : number.format(row.score),
-            element("span", label, row.failures.length ? "failure" : ""), replay]);
+            row.side === "red" ? "红方" : "蓝方", completed ? number.format(row.score) : "—",
+            element("span", label, failure ? "failure" : ""), replay]);
     }
 }
 
@@ -441,10 +582,11 @@ async function refreshResults() {
     const args = [];
     if ($("opponent-filter").value) args.push("--opponent", $("opponent-filter").value);
     if ($("side-filter").value) args.push("--side", $("side-filter").value);
+    const candidate = state.runCandidate ? ["--candidate", state.runCandidate] : [];
     try {
         const [status, comparison, cases] = await Promise.all([
             command("eval", "status", runId), command("eval", "compare", runId, ...args),
-            command("eval", "cases", runId, "--sort", "score_delta", ...args),
+            command("eval", "cases", runId, "--sort", "score_delta", ...args, ...candidate),
         ]);
         if (requestId !== state.resultRequest || state.page !== "results") return;
         const launching = status.status === "incomplete" && status.pending > 0 && Date.now() < state.queueDeadline;
@@ -460,9 +602,10 @@ async function refreshResults() {
     }
 }
 
-async function showRun(runId, queued = false, summary = null) {
+async function showRun(runId, queued = false, summary = null, route = null) {
     state.runId = runId;
     state.runSummary = summary;
+    state.runCandidate = route?.candidate || null;
     state.run = null;
     state.queueDeadline = queued ? Date.now() + 5000 : 0;
     $("run-actions").hidden = true;
@@ -476,12 +619,12 @@ async function showRun(runId, queued = false, summary = null) {
     $("side-filter").value = "";
     selectOptions("opponent-filter", [["", "全部"]]);
     await loadOverview();
-    if (location.hash === "#results") await refreshResults();
+    if (location.hash === "#results" || route) await refreshResults();
     else location.hash = "results";
 }
 
 function applyPage(fresh = false) {
-    const target = location.hash.slice(1);
+    const [target, query] = location.hash.slice(1).split("?", 2);
     state.page = pages.includes(target) ? target : "strategy";
     clearTimeout(state.poll);
     clearTimeout(state.strategyPoll);
@@ -495,7 +638,18 @@ function applyPage(fresh = false) {
     if (!state.overview) return;
     if (state.page === "strategy") void refreshStrategy(fresh);
     if (state.page === "tests") void estimate();
-    if (state.page === "results") void refreshResults();
+    if (state.page === "results") {
+        const params = new URLSearchParams(query);
+        const linkedRun = params.get("run");
+        if (linkedRun) {
+            const summary = state.runSummary?.run_id === linkedRun ? state.runSummary : { run_id: linkedRun };
+            window.scrollTo(0, 0);
+            showRun(linkedRun, false, summary, { candidate: params.get("candidate") }).catch((error) => showNotice(error.message, true));
+        } else {
+            state.runCandidate = null;
+            void refreshResults();
+        }
+    }
 }
 
 function showOnline(op, data) {
