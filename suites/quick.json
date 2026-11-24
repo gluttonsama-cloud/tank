@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "rules_version": "2.6-prelim",
+  "sides": ["red", "blue"],
+  "opponents": ["baseline"],
+  "seeds": [42, 22111],
+  "repeats": 1
+}

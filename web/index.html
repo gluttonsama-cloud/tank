@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>种子杯策略工作台</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/style.css">
+    <script type="module" src="/app.js"></script>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand"><span class="brand-mark" aria-hidden="true"></span>种子杯工作台</div>
+        <nav aria-label="工作台">
+            <a href="#strategy" aria-current="page">策略</a>
+            <a href="#tests">测试</a>
+            <a href="#results">结果</a>
+        </nav>
+    </aside>
+
+    <main>
+        <div id="notice" class="notice" role="status" hidden></div>
+
+        <section id="strategy" aria-labelledby="strategy-title">
+            <header class="page-header">
+                <h1 id="strategy-title">策略</h1>
+                <span id="current-main" class="current-main"></span>
+            </header>
+
+            <section class="panel" aria-labelledby="versions-title">
+                <div class="section-header"><h2 id="versions-title">策略版本</h2></div>
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr><th scope="col">策略</th><th scope="col">版本</th><th scope="col">说明</th><th scope="col">操作</th></tr></thead>
+                        <tbody id="versions"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="training-panel" class="panel" aria-labelledby="training-title" hidden>
+                <div class="section-header"><h2 id="training-title">训练</h2><button id="refresh-training" type="button">刷新</button></div>
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr><th scope="col">脚本</th><th scope="col">启动时间</th><th scope="col">状态</th><th scope="col">产出</th></tr></thead>
+                        <tbody id="training-jobs"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="snapshot-title">
+                <div class="section-header"><h2 id="snapshot-title">创建快照</h2></div>
+                <form id="snapshot-form" class="form-row">
+                    <label>策略目录<select id="source" required></select></label>
+                    <label class="grow">改动说明<input id="note" maxlength="250" placeholder="选填"></label>
+                    <button class="primary" type="submit" disabled>创建快照</button>
+                </form>
+            </section>
+
+            <section class="panel" aria-labelledby="online-title">
+                <div class="section-header"><h2 id="online-title">官网</h2></div>
+                <div class="form-row">
+                    <label>策略版本<select id="online-version"></select></label>
+                    <button type="button" data-online="pack" disabled>打包预检</button>
+                    <button type="button" data-online="practice" disabled>在线练习</button>
+                    <button type="button" class="official" data-online="submit" disabled>提交评测（计入榜单）</button>
+                </div>
+                <form id="online-status-form" class="form-row separated">
+                    <label>提交编号<input id="submission-id" required inputmode="numeric" pattern="[0-9]+"></label>
+                    <button type="submit">查询官网成绩</button>
+                </form>
+                <div id="online-output" class="operation-output" aria-live="polite" hidden></div>
+            </section>
+        </section>
+
+        <section id="tests" aria-labelledby="tests-title" hidden>
+            <header class="page-header"><h1 id="tests-title">测试</h1></header>
+
+            <form id="test-form" class="panel" aria-labelledby="test-options-title">
+                <div class="section-header"><h2 id="test-options-title">测试配置</h2></div>
+                <div class="test-setup">
+                    <fieldset class="candidate-fieldset">
+                        <legend>候选版本</legend>
+                        <div id="candidates" class="choices"></div>
+                    </fieldset>
+                    <div class="test-options">
+                        <label>比较基准<select id="baseline" required></select></label>
+                        <label>测试方案<select id="suite" required></select></label>
+                        <label>对战方式
+                            <select id="mode">
+                                <option value="opponent">同一陪练</option>
+                                <option value="direct">直接交手</option>
+                            </select>
+                        </label>
+                        <label class="check"><input id="save-replay" type="checkbox">保存回放</label>
+                    </div>
+                </div>
+                <div class="panel-footer">
+                    <span id="estimate" class="muted" aria-live="polite">请选择候选版本</span>
+                    <button id="start-test" class="primary" type="submit" disabled>开始测试</button>
+                </div>
+            </form>
+        </section>
+
+        <section id="results" aria-labelledby="results-title" hidden>
+            <header class="page-header">
+                <h1 id="results-title">结果</h1>
+                <button id="refresh-results" type="button" disabled>刷新</button>
+            </header>
+
+            <div id="no-runs" class="panel empty">暂无测试批次。<a href="#tests">开始测试</a></div>
+            <div id="run-content" hidden>
+                <section class="panel" aria-labelledby="run-title">
+                    <div class="section-header">
+                        <h2 id="run-title">测试批次</h2>
+                        <label class="visually-hidden" for="run-select">选择批次</label>
+                        <select id="run-select"></select>
+                    </div>
+                    <div class="run-progress">
+                        <div class="progress-label"><strong id="run-status"></strong><span id="run-count"></span></div>
+                        <progress id="run-progress" aria-label="测试进度" max="1" value="0"></progress>
+                        <p id="run-meta" class="muted"></p>
+                    </div>
+                    <div class="panel-footer" id="run-actions" hidden>
+                        <div class="button-row">
+                            <button type="button" data-eval="resume" hidden>继续测试</button>
+                            <button type="button" data-eval="retry" hidden>重试</button>
+                            <button type="button" data-eval="cancel" hidden>取消测试</button>
+                            <button type="button" id="repeat-run" hidden>按同方案测试</button>
+                            <button type="button" id="publish-run" hidden>发布到 Git</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel" aria-labelledby="compare-title">
+                    <div class="section-header">
+                        <h2 id="compare-title">版本对比</h2>
+                        <div class="filter-row">
+                            <label>对手<select id="opponent-filter"></select></label>
+                            <label>出生侧<select id="side-filter"><option value="">全部</option><option value="red">红方</option><option value="blue">蓝方</option></select></label>
+                        </div>
+                    </div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr><th scope="col">候选版本</th><th scope="col">平均得分</th><th scope="col" id="compare-delta-title">比主力版</th><th scope="col">胜率</th><th scope="col">分项得分</th><th scope="col">配对</th></tr></thead>
+                            <tbody id="comparison"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="panel" aria-labelledby="cases-title">
+                    <div class="section-header"><h2 id="cases-title">对局明细</h2><span id="case-count" class="muted"></span></div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr><th scope="col">候选版本</th><th scope="col">对手</th><th scope="col">地图种子</th><th scope="col">出生侧</th><th scope="col">得分</th><th scope="col">状态</th><th scope="col">回放</th></tr></thead>
+                            <tbody id="cases"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

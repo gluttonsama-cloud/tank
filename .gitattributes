@@ -1,0 +1,8 @@
+*.py text eol=lf
+*.sh text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+published/versions/**/files/** -text
+*.gz -text
+published/runtimes/*.zip -text
+*.bin -text

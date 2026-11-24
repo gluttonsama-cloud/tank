@@ -1,0 +1,45 @@
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install verified SDK and development dependencies
+        run: |
+          sdk=seedcup-0.4.3-py3-none-any.whl
+          curl --fail --location --retry 3 --output "resource/$sdk" "https://tank.dian.org.cn/sdk/$sdk"
+          (cd resource && sha256sum -c SHA256SUMS)
+          python -m pip install "resource/$sdk"
+          python -m pip install -e '.[dev]'
+      - uses: actions/cache@v4
+        with:
+          path: .local/checks
+          key: tank-checks-${{ runner.os }}-${{ github.sha }}
+          restore-keys: tank-checks-${{ runner.os }}-
+      - name: Check changes
+        env:
+          BASE_REV: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if git cat-file -e "${BASE_REV}^{commit}" 2>/dev/null; then
+            tank check --base "$BASE_REV"
+          else
+            tank check --all
+          fi

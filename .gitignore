@@ -2,9 +2,13 @@
 /resource/*.whl
 /resource/*.zip
 /.venv/
+*.egg-info/
+/build/
+/dist/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+/.playwright-mcp/
 /web/node_modules/
 /web/dist/
 .env

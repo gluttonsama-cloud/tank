@@ -1,0 +1,21 @@
+#!/bin/sh
+set -eu
+
+if [ -n "${VIRTUAL_ENV:-}" ]; then
+    if [ -x "$VIRTUAL_ENV/Scripts/python.exe" ]; then
+        check_python="$VIRTUAL_ENV/Scripts/python.exe"
+    else
+        check_python="$VIRTUAL_ENV/bin/python"
+    fi
+elif [ -x .venv/Scripts/python.exe ]; then
+    check_python=.venv/Scripts/python.exe
+elif [ -x .venv/bin/python ]; then
+    check_python=.venv/bin/python
+else
+    check_python=python
+fi
+
+runner=$(mktemp)
+trap 'rm -f "$runner"' EXIT
+git show :src/tank/checks.py > "$runner"
+"$check_python" "$runner" --staged
