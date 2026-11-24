@@ -6,6 +6,7 @@ import hashlib
 import importlib.metadata
 import io
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -16,7 +17,7 @@ import unicodedata
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from uuid import uuid4
-from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile, ZipInfo
 
 import websockets
 from seedcup.game import Game, generate_map, parse_action
@@ -25,6 +26,7 @@ from seedcup.game.runner import match_info
 from seedcup.server.evaluation_manifest import manifest
 
 from . import versions
+from .eval_plan import SCORE_ITEMS
 from .process_bot import ProcessBot
 from .workspace import read_json, write_json
 
@@ -347,6 +349,112 @@ def status(root: Path, submission_id: int, *, client=None) -> dict:
         item = old | item
         write_json(path, item)
     return item
+
+
+def _score_number(value):
+    return type(value) in (int, float) and math.isfinite(value) and value >= 0
+
+
+def _complete_score(item):
+    score = item.get("evaluation")
+    if not isinstance(score, dict) or score.get("status") != "completed" or score.get("error"):
+        return None
+    total = score.get("score")
+    breakdown = score.get("breakdown")
+    if not _score_number(total) or not isinstance(breakdown, dict):
+        return None
+    parts = {name: breakdown.get(name) for name in SCORE_ITEMS}
+    if not all(map(_score_number, parts.values())):
+        return None
+    if round(total * 100) != sum(round(value * 100) for value in parts.values()):
+        return None
+    return {"score": total, "breakdown": parts, "games": 40}
+
+
+def _existing_version(root, version_id):
+    if not isinstance(version_id, str) or not re.fullmatch(r"v-[0-9a-f]{64}", version_id):
+        return False
+    try:
+        versions.verify(root, version_id)
+    except (ValueError, FileNotFoundError, KeyError):
+        return False
+    return True
+
+
+def _archive_version(root, digest):
+    path = root / ".local/online/packages" / (digest + ".zip")
+    if not path.is_file():
+        return None
+    try:
+        with path.open("rb") as file:
+            if (os.fstat(file.fileno()).st_size >= 10_000_000
+                    or hashlib.file_digest(file, "sha256").hexdigest() != digest):
+                return None
+            with ZipFile(file) as archive:
+                files = archive.infolist()
+                names = {file.filename for file in files}
+                if (len(names) != len(files) or not 1 <= len(files) <= 128 or "submission.json" not in names
+                        or any(file.is_dir() for file in files)
+                        or sum(file.file_size for file in files) > 32 * 1024 * 1024):
+                    return None
+                hashes = {name: hashlib.sha256(archive.read(name)).hexdigest() for name in names}
+    except (BadZipFile, FileNotFoundError):
+        return None
+    version_id = versions._version_id(hashes)
+    return (version_id, path) if _existing_version(root, version_id) else None
+
+
+def _associated_version(root, client, item, archives):
+    record_path = _submission_path(root, client, item["id"])
+    if record_path.is_file():
+        record = read_json(record_path)
+        if any(record.get(field) != item[field] for field in ("id", "version", "sha256")):
+            return None
+        if record.get("team_id") != client.user["id"] or not _existing_version(root, record.get("version_id")):
+            return None
+        return record["version_id"]
+    digest = item["sha256"]
+    if digest not in archives:
+        archives[digest] = _archive_version(root, digest)
+    match = archives[digest]
+    if match is None:
+        return None
+    version_id, package = match
+    write_json(record_path, item | {
+        "version_id": version_id, "package": str(package), "team_id": client.user["id"],
+        "link_source": "archive_sha256",
+    })
+    return version_id
+
+
+def refresh(root: Path, *, client=None) -> dict:
+    """Refresh the team's current official scores using one submission listing request."""
+    client = client if client is not None else OnlineClient.login()
+    listing = client.request("GET", SUBMISSIONS)
+    rows = []
+    archives = {}
+    for item in listing["submissions"]:
+        score = _complete_score(item)
+        if score is None:
+            continue
+        digest = item["sha256"]
+        if (type(item["id"]) is not int or item["id"] < 1 or not isinstance(digest, str)
+                or not re.fullmatch(r"[0-9a-f]{64}", digest) or not _score_number(item["created_at"])):
+            raise OnlineError("官网返回了无效的提交记录标识")
+        rows.append({
+            "id": item["id"], "version": item["version"], "sha256": digest, "created_at": item["created_at"],
+            "version_id": _associated_version(root, client, item, archives),
+        } | score)
+    rows.sort(key=lambda item: (item["created_at"], item["id"]), reverse=True)
+    best_id = listing["best_id"]
+    snapshot = {
+        "team_id": client.user["id"], "refreshed_at": time.time(), "best_id": best_id,
+        "source_url": f"{SITE}/team#submissionPanel",
+        "best": next((row for row in rows if row["id"] == best_id), None),
+        "recent": rows[0] if rows else None, "submissions": rows,
+    }
+    write_json(root / ".local/online/team-scores.json", snapshot)
+    return snapshot
 
 
 def matches(root: Path, *, client=None) -> list[dict]:

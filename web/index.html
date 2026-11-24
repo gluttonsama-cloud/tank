@@ -22,42 +22,30 @@
         <div id="notice" class="notice" role="status" hidden></div>
 
         <section id="strategy" aria-labelledby="strategy-title">
-            <header class="page-header">
-                <h1 id="strategy-title">策略</h1>
-                <span id="current-main" class="current-main"></span>
-            </header>
+            <header class="page-header"><h1 id="strategy-title">策略</h1></header>
 
-            <section class="panel" aria-labelledby="versions-title">
-                <div class="section-header"><h2 id="versions-title">策略版本</h2></div>
-                <div class="table-scroll">
-                    <table>
-                        <thead><tr><th scope="col">策略</th><th scope="col">版本</th><th scope="col">说明</th><th scope="col">操作</th></tr></thead>
-                        <tbody id="versions"></tbody>
-                    </table>
+            <section class="team-score panel" aria-labelledby="team-score-title">
+                <div>
+                    <h2 id="team-score-title">官网榜单最高总分</h2>
+                    <p id="team-score-meta" class="muted">40 局</p>
                 </div>
+                <output id="team-score" class="score-value" aria-labelledby="team-score-title">—</output>
             </section>
 
-            <section id="training-panel" class="panel" aria-labelledby="training-title" hidden>
-                <div class="section-header"><h2 id="training-title">训练</h2><button id="refresh-training" type="button">刷新</button></div>
+            <div id="projects" class="project-list" aria-label="策略项目"></div>
+
+            <details id="training-panel" class="panel utility-panel" hidden>
+                <summary class="utility-toggle">训练状态 <span id="training-summary" class="muted"></span></summary>
                 <div class="table-scroll">
                     <table>
-                        <thead><tr><th scope="col">脚本</th><th scope="col">启动时间</th><th scope="col">状态</th><th scope="col">产出</th></tr></thead>
+                        <thead><tr><th scope="col">项目</th><th scope="col">最近作业</th><th scope="col">状态</th><th scope="col">产出</th></tr></thead>
                         <tbody id="training-jobs"></tbody>
                     </table>
                 </div>
-            </section>
+            </details>
 
-            <section class="panel" aria-labelledby="snapshot-title">
-                <div class="section-header"><h2 id="snapshot-title">创建快照</h2></div>
-                <form id="snapshot-form" class="form-row">
-                    <label>策略目录<select id="source" required></select></label>
-                    <label class="grow">改动说明<input id="note" maxlength="250" placeholder="选填"></label>
-                    <button class="primary" type="submit" disabled>创建快照</button>
-                </form>
-            </section>
-
-            <section class="panel" aria-labelledby="online-title">
-                <div class="section-header"><h2 id="online-title">官网</h2></div>
+            <details class="panel utility-panel">
+                <summary class="utility-toggle">官网操作</summary>
                 <div class="form-row">
                     <label>策略版本<select id="online-version"></select></label>
                     <button type="button" data-online="pack" disabled>打包预检</button>
@@ -69,7 +57,7 @@
                     <button type="submit">查询官网成绩</button>
                 </form>
                 <div id="online-output" class="operation-output" aria-live="polite" hidden></div>
-            </section>
+            </details>
         </section>
 
         <section id="tests" aria-labelledby="tests-title" hidden>
@@ -111,7 +99,7 @@
             <div id="run-content" hidden>
                 <section class="panel" aria-labelledby="run-title">
                     <div class="section-header">
-                        <h2 id="run-title">测试批次</h2>
+                        <h2 id="run-title">整批进度</h2>
                         <label class="visually-hidden" for="run-select">选择批次</label>
                         <select id="run-select"></select>
                     </div>
@@ -126,14 +114,13 @@
                             <button type="button" data-eval="retry" hidden>重试</button>
                             <button type="button" data-eval="cancel" hidden>取消测试</button>
                             <button type="button" id="repeat-run" hidden>按同方案测试</button>
-                            <button type="button" id="publish-run" hidden>发布到 Git</button>
                         </div>
                     </div>
                 </section>
 
                 <section class="panel" aria-labelledby="compare-title">
                     <div class="section-header">
-                        <h2 id="compare-title">版本对比</h2>
+                        <h2 id="compare-title">候选实测成绩</h2>
                         <div class="filter-row">
                             <label>对手<select id="opponent-filter"></select></label>
                             <label>出生侧<select id="side-filter"><option value="">全部</option><option value="red">红方</option><option value="blue">蓝方</option></select></label>
@@ -141,7 +128,7 @@
                     </div>
                     <div class="table-scroll">
                         <table>
-                            <thead><tr><th scope="col">候选版本</th><th scope="col">平均得分</th><th scope="col" id="compare-delta-title">比主力版</th><th scope="col">胜率</th><th scope="col">分项得分</th><th scope="col">配对</th></tr></thead>
+                            <thead><tr><th scope="col">候选版本</th><th scope="col">累计总分</th><th scope="col">计入局数</th><th scope="col">配对分差</th><th scope="col">配对胜率</th><th scope="col">配对</th></tr></thead>
                             <tbody id="comparison"></tbody>
                         </table>
                     </div>

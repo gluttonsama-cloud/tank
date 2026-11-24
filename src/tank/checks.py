@@ -18,7 +18,7 @@ from urllib.parse import unquote, urlsplit
 
 
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-TEST_MODULES = {"src", "strategies", "training", "suites", "tests", "web", "resource"}
+TEST_MODULES = {"src", "strategies", "projects", "training", "suites", "tests", "web", "resource"}
 TEST_CONFIG = {
     ".gitattributes", ".gitignore", "pyproject.toml", "pytest.ini", "setup.cfg", "setup.py",
     "tox.ini", "uv.lock", "poetry.lock", "Pipfile", "Pipfile.lock", "resource/SHA256SUMS",
@@ -30,6 +30,7 @@ RUNTIME_FILES = {
     "src/tank/eval_plan.py": {"src/tank/eval_runner.py", "src/tank/_sdk_bot.py", "src/tank/simulation.py"},
 }
 ASSET_USERS = {
+    "projects/": {"src/tank/catalog.py"},
     "strategies/": {"src/tank/versions.py", "src/tank/process_bot.py", "src/tank/online.py"},
     "training/": {"src/tank/jobs.py"},
     "suites/": {"src/tank/eval_plan.py"},

@@ -37,12 +37,35 @@ main { max-width: 1350px; margin-left: 212px; padding: 37px clamp(22px, 4vw, 64p
 h1, h2, p { margin: 0; }
 h1 { font-size: 32px; line-height: 1.25; letter-spacing: -.04em; }
 h2 { font-size: 17px; font-weight: 740; }
-.current-main { color: var(--muted); font-size: 13px; }
-.current-main strong { margin-left: 8px; color: var(--accent-dark); }
 .muted { color: var(--muted); }
 
 .panel { margin-bottom: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 .section-header { min-height: 56px; padding: 12px 19px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.team-score { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; padding: 18px 20px; background: #edf3eb; }
+.team-score p { margin-top: 3px; font-size: 13px; }
+.score-value { font-size: 27px; font-weight: 740; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.team-score .score-value { color: var(--accent-dark); }
+.project-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(350px, 100%), 1fr)); gap: 14px; align-items: start; margin-bottom: 18px; }
+.project-list > .empty { grid-column: 1 / -1; margin-bottom: 0; }
+.project-card { min-width: 0; margin-bottom: 0; }
+.project-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; padding: 15px 18px 0; }
+.project-kind { color: var(--muted); font-size: 13px; }
+.project-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 14px 0; }
+.project-metric { min-width: 0; padding: 0 18px; }
+.project-metric + .project-metric { border-left: 1px solid var(--line); }
+.project-metric dt { margin-bottom: 6px; color: var(--muted); font-size: 13px; }
+.project-metric dd { display: grid; gap: 5px; margin: 0; overflow-wrap: anywhere; }
+.project-metric .score-value { font-size: 23px; }
+.score-meta { display: grid; gap: 2px; color: var(--muted); font-size: 12px; }
+.project-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 15px; }
+.project-history { border-top: 1px solid var(--line); }
+.utility-toggle { padding: 13px 18px; cursor: pointer; font-size: 14px; font-weight: 650; }
+.utility-toggle .muted { margin-left: 6px; font-size: 12px; font-weight: 400; }
+.project-history .utility-toggle { color: var(--muted); font-size: 13px; }
+.history-list { list-style: none; margin: 0; padding: 0 18px 8px; }
+.history-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 7px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.history-row button { min-height: 34px; font-size: 13px; }
+.history-note { display: block; color: var(--muted); }
 .empty { padding: 23px 20px; color: var(--muted); }
 .empty a { margin-left: 8px; }
 .table-scroll { overflow-x: auto; }
@@ -50,9 +73,7 @@ table { width: 100%; border-collapse: collapse; text-align: left; white-space: n
 th, td { padding: 11px 19px; border-top: 1px solid var(--line); vertical-align: middle; }
 th { background: #f0f3ee; color: #47564d; font-size: 13px; font-weight: 650; }
 td { font-variant-numeric: tabular-nums; }
-.summary-col { white-space: normal; min-width: 120px; }
-.version-id { font: 12px/1.4 ui-monospace, Consolas, monospace; color: var(--muted); }
-.components { font-size: 12px; color: var(--muted); }
+.result-score { font-size: 17px; font-weight: 730; }
 .training-output { display: flex; align-items: center; gap: 10px; }
 .training-error { display: block; max-width: 32ch; white-space: normal; color: var(--danger); font-size: 12px; }
 .tag { display: inline-block; color: var(--accent-dark); background: var(--selected); padding: 2px 7px; border-radius: 4px; }
@@ -62,7 +83,6 @@ td { font-variant-numeric: tabular-nums; }
 .form-row, .button-row, .filter-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
 .form-row { padding: 0 19px 17px; }
 .separated { padding-top: 14px; border-top: 1px solid var(--line); }
-.grow { flex: 1; }
 label { display: grid; gap: 5px; font-size: 13px; font-weight: 650; }
 input, select, button { color: inherit; font: inherit; }
 input:not([type="checkbox"]), select, button { min-height: 38px; border: 1px solid #cbd5cc; border-radius: 6px; background: var(--surface); font-size: 14px; }
@@ -114,6 +134,10 @@ progress::-moz-progress-bar { background: var(--accent); }
     nav a { padding: 7px 9px; }
     main { margin-left: 0; padding: 23px 14px 44px; }
     h1 { font-size: 28px; }
+}
+
+@media (max-width: 635px) {
+    .project-list { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 500px) {

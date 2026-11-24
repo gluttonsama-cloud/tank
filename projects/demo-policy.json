@@ -1,0 +1,6 @@
+{
+  "name": "示范学习模型",
+  "kind": "imitation",
+  "sources": [],
+  "training": ["fit_demo.py"]
+}

@@ -6,6 +6,7 @@ from zipfile import ZipFile
 import pytest
 
 from tank import online, versions
+from tank.workspace import read_json, write_json
 
 
 def _snapshot(root: Path, code: str) -> str:
@@ -86,7 +87,7 @@ def test_submit_timeout_reconciles_same_zip_without_second_post(tmp_path, monkey
     package = {"version_id": "test-key", "path": str(archive), "sha256": digest}
     monkeypatch.setattr(online, "pack", lambda root, key: package)
     record = {"version": "custom", "id": 5, "sha256": digest, "evaluation": {"status": "queued"}}
-    finished = record | {"evaluation": {"status": "succeeded", "score": 123, "breakdown": {"kill": 50}}}
+    finished = record | {"evaluation": {"status": "completed", "score": 123, "breakdown": {"kill": 50}}}
     client = _MockClient([_listing(), online.RequestUncertain("timeout"), _listing(record), _listing(finished)])
 
     assert online.submit(tmp_path, "test-key", version="custom", client=client)["id"] == 5
@@ -174,3 +175,60 @@ def test_practice_stops_when_connection_is_replaced(tmp_path, monkeypatch):
     with pytest.raises(online.OnlineError, match="连接被替换"):
         online.practice(tmp_path, key, client=client)
     assert len(calls) == 1
+
+
+def _completed(submission_id, digest, score):
+    return {
+        "id": submission_id, "version": f"official-{submission_id}", "sha256": digest,
+        "created_at": float(submission_id), "download_url": None,
+        "evaluation": {
+            "status": "completed", "score": score, "error": None,
+            "breakdown": {"kill": 0, "damage": score, "survive": 0, "time": 0},
+        },
+    }
+
+
+def test_refresh_uses_one_listing_and_links_old_and_new_official_records(tmp_path):
+    version = _snapshot(tmp_path, BOT)
+    packed = online.pack(tmp_path, version)
+    best = _completed(1, "b" * 64, 5600)
+    recent = _completed(2, packed["sha256"], 5600)
+    unlinked = _completed(3, "c" * 64, 4000) | {"created_at": 1.5}
+    pending = _completed(4, "d" * 64, 6000)
+    pending["evaluation"]["status"] = "running"
+    invalid = _completed(5, "e" * 64, 7000)
+    del invalid["evaluation"]["breakdown"]["time"]
+    fake_total = _completed(6, "f" * 64, 8000)
+    fake_total["evaluation"]["score"] = 7000
+    listing = _listing(pending, recent, best, invalid, unlinked, fake_total) | {"best_id": 1}
+    client = _MockClient([listing, listing])
+    (tmp_path / ".local/online/submissions").mkdir()
+    write_json(tmp_path / ".local/online/submissions/8-1.json", best | {"team_id": 8, "version_id": version})
+
+    summary = online.refresh(tmp_path, client=client)
+
+    assert client.requests == [("GET", online.SUBMISSIONS, {})]
+    assert summary["best"]["id"] == 1 and summary["best"]["version_id"] == version
+    assert summary["recent"]["id"] == 2 and summary["recent"]["version_id"] == version
+    assert all(item["games"] == 40 for item in summary["submissions"])
+    assert {item["id"]: item["version_id"] for item in summary["submissions"]} == {1: version, 2: version, 3: None}
+    assert read_json(tmp_path / ".local/online/team-scores.json") == summary
+    saved = read_json(tmp_path / ".local/online/submissions/8-2.json")
+    assert saved["link_source"] == "archive_sha256"
+    Path(packed["path"]).unlink()
+    assert online.refresh(tmp_path, client=client)["recent"]["version_id"] == version
+
+
+def test_refresh_leaves_unknown_or_conflicting_link_unassigned(tmp_path, monkeypatch):
+    version = _snapshot(tmp_path, BOT)
+    row = _completed(1, "a" * 64, 42)
+    client = _MockClient([_listing(row) | {"best_id": 1}])
+    path = tmp_path / ".local/online/submissions/8-1.json"
+    prior = row | {"team_id": 8, "version_id": version, "sha256": "b" * 64}
+    write_json(path, prior)
+    monkeypatch.setattr(online, "_archive_version", lambda *args: pytest.fail("a conflicting record must not fall back"))
+
+    summary = online.refresh(tmp_path, client=client)
+
+    assert summary["best"]["version_id"] is None
+    assert read_json(path) == prior

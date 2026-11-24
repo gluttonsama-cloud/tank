@@ -343,9 +343,16 @@ def compare(root, run_id, *, opponent=None, side=None):
         candidate_scores, baseline_scores, candidate_wins = [], [], []
         candidate_items, baseline_items = defaultdict(list), defaultdict(list)
         used, expected_ids, missing_ids = 0, set(), set()
+        played, total_cents = 0, 0
         for _, _, _, _, focal, baseline, missing, direct in groups:
             expected_ids.update(key for key, _ in focal + baseline)
             missing_ids.update(missing)
+            for index in sides:
+                recorded = done.get(focal[index][0])
+                if recorded is not None:
+                    items = recorded["result"]["result"]["scores"][index]
+                    total_cents += sum(round(items[key] * 100) for key in SCORE_ITEMS)
+                    played += 1
             if missing:
                 continue
             used += 1
@@ -364,7 +371,13 @@ def compare(root, run_id, *, opponent=None, side=None):
             "failure_rate": len(missing_ids & failures.keys()) / len(expected_ids),
             "status": "completed" if used == len(groups) else "incomplete",
         }
+        row.update(scored_games=played, scheduled_games=len(groups) * len(sides),
+                   total_score=total_cents / 100 if played else None, total_delta=None)
         if used:
+            # The official evaluator rounds each score component to cents before summing.
+            total = sum(round(item * 100) for values in candidate_items.values() for item in values)
+            base_total = sum(round(item * 100) for values in baseline_items.values() for item in values)
+            row["total_delta"] = (total - base_total) / 100
             row.update(
                 mean_score=fmean(candidate_scores), baseline_mean_score=fmean(baseline_scores),
                 score_delta=fmean(a - b for a, b in zip(candidate_scores, baseline_scores, strict=True)),

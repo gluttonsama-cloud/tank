@@ -47,6 +47,7 @@ def test_git_publish_and_restore_on_another_checkout(tmp_path, monkeypatch):
     run_id = suite["run_id"]
     expected = evaluation.compare(first, run_id)
     published = sync.push(first, run_id)
+    assert sync.list_remote(second) == [run_id]
     assert published["state"] == "published"
     manifest = read_json(first / "published/runs" / run_id / "manifest.json")
     frozen = eval_plan.runtime_directory(first, manifest["engine"])

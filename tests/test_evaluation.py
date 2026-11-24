@@ -61,6 +61,9 @@ def test_interrupted_pair_excludes_delta_and_resumes_only_missing(tmp_path, monk
     assert evaluation.status(root, run_id)["completed"] == 3
     comparison, = evaluation.compare(root, run_id)["rows"]
     assert comparison["completed_pairs"] == 0
+    assert comparison["scored_games"] in (1, 2)
+    assert comparison["total_score"] == 2 * comparison["scored_games"]
+    assert comparison["total_delta"] is None
     assert "score_delta" not in comparison
     assert all("score_delta" not in row for row in evaluation.cases(root, run_id)["rows"])
 
@@ -76,6 +79,7 @@ def test_interrupted_pair_excludes_delta_and_resumes_only_missing(tmp_path, monk
     complete, = evaluation.compare(root, run_id)["rows"]
     assert complete["completed_pairs"] == 1
     assert complete["score_delta"] == 1
+    assert (complete["total_score"], complete["scored_games"], complete["scheduled_games"], complete["total_delta"]) == (4, 2, 2, 2)
     assert complete["components"]["damage"] == 2
 
     fresh, _ = workspace(tmp_path / "uninterrupted")

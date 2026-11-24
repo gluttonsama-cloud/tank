@@ -10,6 +10,7 @@ import platform
 import re
 import sys
 import tempfile
+import time
 from functools import lru_cache
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile, ZipInfo
@@ -238,12 +239,16 @@ def freeze_runner(root, engine):
         package.mkdir(parents=True)
         for name, contents in files.items():
             (package / name).write_bytes(contents)
-        try:
-            staged.rename(destination)
-        except OSError:
-            if not destination.is_dir():
-                raise
-            return freeze_runner(root, engine)
+        for attempt in range(5):
+            try:
+                staged.rename(destination)
+                break
+            except OSError as error:
+                if destination.is_dir():
+                    return freeze_runner(root, engine)
+                if getattr(error, "winerror", None) not in (5, 32) or attempt == 4:
+                    raise
+                time.sleep(0.05 * 2**attempt)
     return destination
 
 

@@ -128,6 +128,16 @@ def list_published(root):
     return [f.parent.name for f in sorted((root / "published/runs").glob("run-*/manifest.json"))]
 
 
+def list_remote(root):
+    refs = _git(root, "ls-remote", "--heads", "origin", "refs/heads/experiments/*")
+    ids = set()
+    for line in refs.splitlines():
+        parts = line.split()[1].split("/")
+        if len(parts) == 5 and RUN_ID.fullmatch(parts[3]):
+            ids.add(parts[3])
+    return sorted(ids)
+
+
 def _git(root, *args):
     env = os.environ.copy()
     env.update(GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never")

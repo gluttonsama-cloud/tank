@@ -37,7 +37,8 @@ def parser():
         "eval": ("estimate", "start", "list", "status", "compare", "cases", "cancel", "resume",
                  "retry", "reproduce", "replay", "logs", "export", "import"),
         "sync": ("publish", "restore", "list", "fetch"),
-        "online": ("pack", "practice", "submit", "status", "matches"),
+        "online": ("pack", "practice", "submit", "status", "matches", "refresh"),
+        "project": ("list",),
         "training": ("collect", "list"),
     }
     for group, ops in operations.items():
@@ -57,7 +58,9 @@ def parser():
                         cmd.add_argument("--name", required=True)
             elif group == "eval":
                 if op in ("start", "estimate"):
-                    cmd.add_argument("--candidates", required=True, help="逗号分隔的快照 ID")
+                    candidates = cmd.add_mutually_exclusive_group(required=True)
+                    candidates.add_argument("--candidates", help="逗号分隔的快照 ID")
+                    candidates.add_argument("--strategy", action="append", help="自动保存策略目录并测试，可重复")
                     cmd.add_argument("--baseline")
                     cmd.add_argument("--suite", default="quick")
                     cmd.add_argument("--shards", type=int, default=1)
@@ -87,7 +90,9 @@ def parser():
                         cmd.add_argument("--candidate")
                         cmd.add_argument("--limit", type=int, default=20)
                         cmd.add_argument("--sort")
-            elif group == "sync" and op != "list":
+            elif group == "sync" and op == "list":
+                cmd.add_argument("--remote", action="store_true", help="列出队友已推送的批次")
+            elif group == "sync":
                 cmd.add_argument("run_id")
                 if op == "publish":
                     cmd.add_argument("--push", action="store_true", help="发布到 Git 远端实验分支")
@@ -97,7 +102,7 @@ def parser():
                     cmd.add_argument("--opponent", action="append", required=True)
                     cmd.add_argument("--seeds", required=True, help="地图种子，以逗号分隔")
                     cmd.add_argument("--repeats", type=int, default=1)
-            elif group == "online" and op != "matches":
+            elif group == "online" and op not in ("matches", "refresh"):
                 cmd.add_argument("identifier")
                 if op == "submit":
                     cmd.add_argument("--version")
@@ -131,6 +136,9 @@ def execute(root, args):
         from . import jobs
         return jobs.dispatch(root, args)
     group, op = args.group, args.op
+    if group == "project":
+        from .catalog import projects
+        return projects(root)
     if group == "snapshot":
         if op == "compare":
             return versions.compare(root, args.version_id, args.other_id)
@@ -163,7 +171,9 @@ def execute(root, args):
     if group == "eval":
         from . import evaluation as ev
         if op in ("estimate", "start"):
-            values = (root, args.candidates.split(","), args.baseline or versions.main_version(root), args.suite)
+            ids = ([versions.create(root, name)["id"] for name in args.strategy] if args.strategy
+                   else args.candidates.split(","))
+            values = (root, ids, args.baseline or versions.main_version(root), args.suite)
             opts = dict(shards=args.shards, mode=args.mode)
             if op == "estimate":
                 return ev.estimate(*values, **opts, replay=args.replay)
@@ -188,7 +198,7 @@ def execute(root, args):
     if group == "sync":
         from . import sync
         if op == "list":
-            return sync.list_published(root)
+            return sync.list_remote(root) if args.remote else sync.list_published(root)
         if op == "publish" and args.push:
             return sync.push(root, args.run_id)
         return getattr(sync, op)(root, args.run_id)
@@ -211,6 +221,8 @@ def execute(root, args):
         return {"match_id": match_id, "samples": len(data["samples"]), "path": str(path)}
     if group == "online":
         from . import online
+        if op == "refresh":
+            return online.refresh(root)
         if op == "status":
             return online.status(root, int(args.identifier))
         if op == "submit":

@@ -22,7 +22,9 @@ git config --local core.hooksPath .githooks
 tank web --open
 ```
 
-在「策略」保存起始策略的快照并设为主力。修改策略后再存一版，在「测试」选择新版本，在「结果」查看它比主力多得了多少分。GPT 可用 `tank snapshot create --strategy starter --json` 保存同样的快照，用 `tank eval start --help` 查看批量测试参数。训练入口见[训练说明](./training/README.md)。
+首页按项目展示策略类型、官网成绩和最近本地实测，历史版本可展开。从项目开始测试会固定当前版本。GPT 用 `tank project list --json` 查询项目，用 `tank eval start --strategy starter --suite full --json` 固定源码并开始完整测试。训练入口见[训练说明](./training/README.md)。
+
+添加项目时，GPT 在 `projects/` 登记显示名、类型、策略目录和训练脚本。一个项目可对应多个版本；类型支持规则、规划、强化学习、模仿学习、混合及其他。可参考[规则策略](./projects/starter.json)和[模仿学习模型](./projects/demo-policy.json)。
 
 ## 官网练习
 
@@ -37,7 +39,7 @@ tank web --open
 
 在「策略」选择快照后点「在线练习」。
 
-用 `tank online status <提交编号> --json` 取回官网成绩。本机提交记录中的 `version_id` 可用于 `tank eval list --version <版本ID>`，定位同一快照的本地批次。
+工作台读取本机队伍账号，打开首页时自动更新官网成绩，每五分钟至多请求一次。GPT 可用 `tank online refresh --json` 更新。官网显示历史最高的 40 局总分。本地显示实际计入的局数和总分，只比较同一方案的成绩。
 
 ## 分摊批量测试
 
@@ -45,7 +47,7 @@ tank web --open
 
 - 协调机运行 `tank lan serve <批次ID> --host 0.0.0.0 --port 8766`。
 - 工作机运行 `tank lan work http://<协调机校园网IP>:8766 --max-shards 8` 领取分片并回传。
-- 单机离线运行用 `tank eval resume <批次ID> --shard 0`。完成后在「结果」点「发布到 Git」，队友用 `tank sync fetch <批次ID>` 合并成绩。
+- 单机离线运行用 `tank eval resume <批次ID> --shard 0`。交接时由 GPT 执行 `tank sync publish <批次ID> --push`；队友的 GPT 用 `tank sync list --remote` 查找已共享批次，用 `tank sync fetch <批次ID>` 合并成绩。
 
 ## 自动检查
 

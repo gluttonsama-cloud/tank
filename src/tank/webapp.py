@@ -1,5 +1,7 @@
 import json
+import os
 import threading
+import time
 import webbrowser
 from functools import partial
 from http import HTTPStatus
@@ -12,10 +14,15 @@ from seedcup.client.viewer import TYPES, WEB, static_file
 from . import evaluation, versions
 from .cli import execute, list_runs, parser
 from .eval_plan import list_suites
+from .workspace import read_json
 
 
 def overview(root):
-    return {"versions": versions.list_versions(root), "main": versions.main_version(root),
+    from .catalog import projects
+    scores = root / ".local/online/team-scores.json"
+    team = read_json(scores) if scores.exists() else {}
+    return {"projects": projects(root), "team_scores": {key: team.get(key) for key in ("best", "recent", "refreshed_at")},
+            "versions": versions.list_versions(root), "main": versions.main_version(root),
             "sources": sorted(p.parent.name for p in (root / "strategies").glob("*/submission.json")),
             "suites": [s["name"] for s in list_suites(root)], "runs": list_runs(root)}
 
@@ -27,7 +34,31 @@ class WorkbenchHTTP(ThreadingHTTPServer):
         self.root = root
         self.replays = {}
         self.guard = threading.Lock()
+        self.next_sync = 0
+        self.sync_error = None
+        self.sync_running = False
         super().__init__(addr, Handler)
+
+    def refresh_scores(self):
+        if not (os.environ.get("SEEDCUP_USERNAME") and os.environ.get("SEEDCUP_PASSWORD")):
+            return
+        with self.guard:
+            if self.sync_running or time.monotonic() < self.next_sync:
+                return
+            self.sync_running = True
+            self.next_sync = time.monotonic() + 300
+        threading.Thread(target=self._sync_scores, daemon=True).start()
+
+    def _sync_scores(self):
+        from . import online
+        try:
+            online.refresh(self.root)
+            self.sync_error = None
+        except (ValueError, OSError) as error:
+            self.sync_error = str(error)
+        finally:
+            with self.guard:
+                self.sync_running = False
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -59,7 +90,9 @@ class Handler(BaseHTTPRequestHandler):
         root = self.server.root
         try:
             if url.path == "/api/overview":
-                return self._reply(overview(root))
+                self.server.refresh_scores()
+                return self._reply(overview(root) | {"sync_error": self.server.sync_error,
+                                                     "score_sync_running": self.server.sync_running})
             if url.path == "/replay":
                 case = parse_qs(url.query)["case"][0]
                 path = evaluation.replay(root, case)["replay_path"]
