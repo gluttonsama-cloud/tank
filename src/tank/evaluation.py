@@ -16,7 +16,7 @@ from statistics import fmean
 from tempfile import NamedTemporaryFile
 from uuid import uuid4
 
-from . import versions
+from . import publication, versions
 from .eval_plan import (
     SCORE_ITEMS, engine_fields, freeze_runner, get_suite, json_text, list_suites, make_manifest, match_specs, pairings,
     required, shard_for, validate_manifest, version_ids,
@@ -110,12 +110,14 @@ def _verify_inputs(root, manifest):
 
 def start(
     root, candidates, baseline, suite, *, shards=1, mode="opponent", timeout=120, replay=False,
-    background=True, prepare_only=False,
+    background=True, prepare_only=False, share=False,
 ):
     manifest = _plan(root, candidates, baseline, suite, shards, mode, timeout, replay)
     _verify_inputs(root, manifest)
     with database(root) as db:
         add_manifest(db, manifest)
+        if share:
+            publication.register(db, manifest["run_id"])
     if prepare_only:
         return status(root, manifest["run_id"])
     return _launch(root, manifest, shard=None, retry_failures=False, background=background)
@@ -140,6 +142,7 @@ def status(root, run_id):
         errors = {key: row for key, row in _failure_rows(db, run_id).items() if key not in done}
         lan = leased_shards(db, run_id)
         queued = queued_shards(db, run_id)
+        sharing = publication.status(root, db, run_id)
     active = sorted(set(_running_shards(root, manifest, specs)) | lan)
     if len(done) == len(specs):
         state = "completed"
@@ -151,6 +154,8 @@ def status(root, run_id):
         state = "queued"
     else:
         state = "incomplete" if run["attempted"] else "pending"
+    if state == "completed" and sharing is not None and sharing["state"] == "waiting":
+        sharing = publication.enqueue(root, run_id)
     return {
         "run_id": run_id, "status": state, "suite": manifest["suite"],
         "candidates": manifest["candidates"], "baseline": manifest["baseline"], "mode": manifest["mode"],
@@ -158,8 +163,31 @@ def status(root, run_id):
         "total": len(specs), "completed": len(done), "pending": len(specs) - len(done) - len(errors),
         "failed": len(errors), "timed_out": sum(row["kind"] == "timeout" for row in errors.values()),
         "eta_seconds": _forecast(manifest, specs, done), "shards": manifest["shards"], "active_shards": active,
-        "lan_shards": sorted(lan),
+        "lan_shards": sorted(lan), "sharing": sharing,
     }
+
+
+def _publish_after_results(root, run_id, case_ids):
+    # At a shard/import boundary, only waiting batches that could have gained results need a fresh status.
+    with database(root) as db:
+        waiting = publication.waiting_runs(db)
+    own_status = None
+    for row in waiting:
+        if row["run_id"] == run_id:
+            own_status = status(root, run_id)
+        elif case_ids and not case_ids.isdisjoint(match_specs(json.loads(row["manifest"]))):
+            status(root, row["run_id"])
+    return own_status
+
+
+def share_retry(root, run_id):
+    result = status(root, run_id)
+    if result["sharing"] is None:
+        raise ValueError(f"批次 {run_id} 未启用自动发布")
+    if result["status"] != "completed":
+        raise ValueError(f"批次 {run_id} 未完成")
+    result["sharing"] = publication.enqueue(root, run_id, retry=True)
+    return result
 
 
 def _launch(root, manifest, *, shard, retry_failures, background):
@@ -229,6 +257,7 @@ def _spawn(root, run_id, shard, retry_failures, launch_id):
 
 
 def _work(root, run_id, shard, retry_failures=False, launch_id=None):
+    saved = set()
     with worker_lock(_run_folder(root, run_id), shard) as locked:
         if not locked:
             return
@@ -277,6 +306,8 @@ def _work(root, run_id, shard, retry_failures=False, launch_id=None):
                     save_match(db, case_id, spec, result, elapsed)
                     if retry_failures:
                         db.execute("DELETE FROM failures WHERE run_id = ? AND case_id = ?", (run_id, case_id))
+                saved.add(case_id)
+    _publish_after_results(root, run_id, saved)
 
 
 def cancel(root, run_id):
@@ -562,7 +593,9 @@ def import_run(root, path, *, expected_assignment=None, expected_manifest=None):
                 received.add(case_id)
         if received or reported_failures:
             db.execute("UPDATE runs SET attempted = 1 WHERE run_id = ?", (manifest["run_id"],))
-    return status(root, manifest["run_id"]) | {
+    run_id = manifest["run_id"]
+    summary = _publish_after_results(root, run_id, received) or status(root, run_id)
+    return summary | {
         "imported_cases": len(received), "imported_failures": len(reported_failures),
     }
 

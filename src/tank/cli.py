@@ -35,7 +35,7 @@ def parser():
         "snapshot": ("create", "list", "show", "compare", "restore", "main"),
         "suite": ("list", "show", "create"),
         "eval": ("estimate", "start", "list", "status", "compare", "cases", "cancel", "resume",
-                 "retry", "reproduce", "replay", "logs", "export", "import"),
+                 "retry", "share-retry", "reproduce", "replay", "logs", "export", "import"),
         "sync": ("publish", "restore", "list", "fetch"),
         "online": ("pack", "practice", "submit", "status", "matches", "refresh"),
         "project": ("list",),
@@ -70,6 +70,7 @@ def parser():
                         cmd.add_argument("--timeout", type=float, default=120)
                         cmd.add_argument("--foreground", action="store_true")
                         cmd.add_argument("--prepare-only", action="store_true", help="只建批次，交给工作机执行")
+                        cmd.add_argument("--share", action="store_true", help="完成后自动发布到 Git 实验分支")
                 elif op == "list":
                     cmd.add_argument("--version", help="按参与对局的快照查询批次")
                     cmd.add_argument("--limit", type=int, default=30)
@@ -178,7 +179,7 @@ def execute(root, args):
             if op == "estimate":
                 return ev.estimate(*values, **opts, replay=args.replay)
             return ev.start(*values, **opts, timeout=args.timeout, replay=args.replay,
-                            background=not args.foreground, prepare_only=args.prepare_only)
+                            background=not args.foreground, prepare_only=args.prepare_only, share=args.share)
         if op == "list":
             return list_runs(root, args.limit, version=args.version)
         if op == "import":
@@ -189,6 +190,8 @@ def execute(root, args):
             return getattr(ev, op)(root, args.case_id)
         if op in ("retry", "resume"):
             return getattr(ev, op)(root, args.run_id, shard=args.shard)
+        if op == "share-retry":
+            return ev.share_retry(root, args.run_id)
         if op == "compare":
             return ev.compare(root, args.run_id, opponent=args.opponent, side=args.side)
         if op == "cases":

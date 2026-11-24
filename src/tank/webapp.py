@@ -89,6 +89,8 @@ class Handler(BaseHTTPRequestHandler):
         url = urlsplit(self.path)
         root = self.server.root
         try:
+            if url.path == "/api/workspace":
+                return self._reply({"application": "tank", "root": str(root.resolve())})
             if url.path == "/api/overview":
                 self.server.refresh_scores()
                 return self._reply(overview(root) | {"sync_error": self.server.sync_error,

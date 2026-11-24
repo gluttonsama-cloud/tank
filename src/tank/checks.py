@@ -38,11 +38,14 @@ ASSET_USERS = {
     "resource/": {"src/tank/eval_plan.py", "src/tank/online.py"},
 }
 DYNAMIC_IMPORTS = {"__import__", "import_module", "run_module", "run_path", "spec_from_file_location"}
-EXTERNAL_COMMAND_USERS = {"src/tank/checks.py", "src/tank/eval_runner.py", "src/tank/jobs.py", "src/tank/process_bot.py"}
+EXTERNAL_COMMAND_USERS = {
+    "src/tank/checks.py", "src/tank/eval_runner.py", "src/tank/jobs.py",
+    "src/tank/process_bot.py", "src/tank/sync.py",
+}
 SUBPROCESS_CALLS = {"Popen", "run", "call", "check_call", "check_output"}
 RUNTIME_SUFFIXES = {
     ".bat", ".c", ".cc", ".cfg", ".cmd", ".cpp", ".h", ".hpp", ".ini",
-    ".json", ".ps1", ".py", ".sh", ".toml", ".yaml", ".yml",
+    ".json", ".ps1", ".py", ".pyw", ".sh", ".toml", ".yaml", ".yml",
 }
 LOCAL_LINK = re.compile(r"\]\(\s*(?:<([^>]+)>|([^\s)]+))")
 
@@ -330,11 +333,10 @@ def _check_links(root: Path, documents: set[str]) -> list[str]:
 def _check_python(root: Path, changed: set[str]) -> list[str]:
     failures = []
     for name in sorted(changed):
-        if name.endswith(".py"):
-            try:
-                compile((root / name).read_bytes(), name, "exec")
-            except SyntaxError as error:
-                failures.append(f"{name}:{error.lineno}: {error.msg}")
+        try:
+            compile((root / name).read_bytes(), name, "exec")
+        except SyntaxError as error:
+            failures.append(f"{name}:{error.lineno}: {error.msg}")
     return failures
 
 
@@ -426,7 +428,7 @@ def _perform(root: Path, args: argparse.Namespace) -> dict:
     documents = {name for name in changed & current if name.endswith(".md")}
     if changed - current:
         documents = {name for name in current if name.endswith(".md")}
-    python = {name for name in changed & current if name.endswith(".py")}
+    python = {name for name in changed & current if name.endswith((".py", ".pyw"))}
     javascript = {name for name in changed & current if name.endswith((".js", ".mjs", ".cjs"))}
     result = {"ok": True, "checks": [], "cached": False, "errors": []}
     if not (documents or python or javascript or args.all or any(_affects_tests(name) for name in changed)):
