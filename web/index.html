@@ -48,26 +48,35 @@
 
             <details id="official-operations" class="panel utility-panel">
                 <summary class="utility-toggle">官网操作</summary>
-                <details id="account-settings">
-                    <summary id="account-label">比赛账号</summary>
-                    <form id="account-form" class="form-row">
-                        <label>账号<input id="account-name" autocomplete="username" required></label>
-                        <label>密码<input id="account-password" type="password" autocomplete="current-password" required></label>
-                        <button type="submit">验证并保存</button>
-                    </form>
-                </details>
-                <div class="form-row">
-                    <label>策略或模型<select id="online-project"></select></label>
-                    <label>版本<select id="online-version"></select></label>
-                    <button type="button" data-online="pack" disabled>打包预检</button>
-                    <label>练习对手<select id="practice-level"><option value="rookie">入门</option><option value="mid">基础</option><option value="strong">进阶</option><option value="boss">终极</option></select></label>
-                    <button type="button" data-online="practice" disabled>在线练习</button>
-                    <button type="button" class="official" data-online="submit" disabled>提交评测（计入榜单）</button>
+                <div class="official-body">
+                    <div class="official-selection">
+                        <label>策略或模型<select id="online-project"></select></label>
+                        <label>版本<select id="online-version"></select></label>
+                        <button type="button" data-online="pack" disabled>打包预检</button>
+                    </div>
+                    <div class="official-match">
+                        <label>练习对手<select id="practice-level"><option value="rookie">入门</option><option value="mid">基础</option><option value="strong">进阶</option><option value="boss">终极</option></select></label>
+                        <button type="button" class="primary" data-online="practice" disabled>开始练习</button>
+                        <button type="button" class="rank-submit" data-online="submit" disabled>提交评测（计入榜单）</button>
+                    </div>
+                    <div class="official-tools">
+                        <details id="account-settings" name="official-tools">
+                            <summary id="account-label">比赛账号</summary>
+                            <form id="account-form">
+                                <label>账号<input id="account-name" autocomplete="username" required></label>
+                                <label>密码<input id="account-password" type="password" autocomplete="current-password" required></label>
+                                <button type="submit">验证并保存</button>
+                            </form>
+                        </details>
+                        <details name="official-tools">
+                            <summary>查官网成绩</summary>
+                            <form id="online-status-form">
+                                <label>提交编号<input id="submission-id" required inputmode="numeric" pattern="[0-9]+"></label>
+                                <button type="submit">查询</button>
+                            </form>
+                        </details>
+                    </div>
                 </div>
-                <form id="online-status-form" class="form-row separated">
-                    <label>提交编号<input id="submission-id" required inputmode="numeric" pattern="[0-9]+"></label>
-                    <button type="submit">查询官网成绩</button>
-                </form>
                 <div id="online-output" class="operation-output" aria-live="polite" hidden></div>
             </details>
         </section>

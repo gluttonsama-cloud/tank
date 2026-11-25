@@ -165,3 +165,33 @@ progress::-moz-progress-bar { background: var(--accent); }
     .form-row > label { flex-basis: 100%; }
     .operation-output { margin-inline: 12px; }
 }
+
+#official-operations > summary {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 15px 20px; font-size: 16px; list-style: none;
+}
+#official-operations > summary::after, .official-tools summary::after {
+    content: ""; width: 6px; height: 6px; border: solid var(--muted);
+    border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); margin: 0 3px 3px 8px;
+}
+#official-operations[open] > summary::after, .official-tools details[open] summary::after { transform: rotate(225deg); margin-top: 5px; }
+.official-body { padding: 0 20px; }
+.official-selection { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto; align-items: end; gap: 12px; }
+.official-selection label, .official-match label, .official-tools label { color: var(--muted); font-size: 12px; }
+.official-body select, .official-body input { min-width: 0; width: 100%; color: #202a26; font-weight: 500; }
+.official-match { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 16px 0; margin-top: 16px; border-top: 1px solid var(--line); }
+.official-match label { width: 9rem; }
+.official-match .rank-submit { margin-left: auto; color: #844222; border-color: #d8c9b9; }
+.official-tools { display: flex; flex-wrap: wrap; align-items: start; column-gap: 22px; border-top: 1px solid var(--line); }
+.official-tools summary { display: inline-flex; align-items: center; cursor: pointer; color: var(--muted); padding: 10px 0; font-size: 13px; list-style: none; }
+.official-tools details[open] { width: 100%; }
+.official-tools form { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; padding: 2px 0 12px; }
+.official-tools input { max-width: 14rem; }
+@media (max-width: 600px) {
+    .official-body { padding: 0 14px; }
+    #official-operations > summary { padding-inline: 14px; }
+    .official-selection { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    .official-selection label:first-child { grid-column: 1 / -1; }
+    .official-match label { flex: 1; }
+    .official-match .rank-submit { flex-basis: 100%; }
+}
