@@ -1,6 +1,7 @@
 """Fit a local sparring policy with whole-map holdout from public boss replays."""
 
 import json
+from collections import Counter
 from math import cos, floor, hypot, radians, sin
 from pathlib import Path
 import shutil
@@ -155,7 +156,32 @@ def adam_fit(x, y, seed, epochs):
     return params | {"mean": mean, "scale": scale, "speeds": speeds}
 
 
-def fit_maneuvers(x, y, seed, epochs):
+RANGE_SECONDS = (1, 3)
+
+
+def future_range_changes(frames):
+    """Signed range change as a fraction of the distance both tanks could travel."""
+    positions = np.asarray([[*red[:2], *blue[:2]] for _, red, blue, _, _ in frames], dtype=np.float32)
+    distance = np.linalg.norm(positions[:, :2] - positions[:, 2:], axis=1)
+    targets = np.full((len(frames) - 1, len(RANGE_SECONDS)), np.nan, dtype=np.float32)
+    for column, seconds in enumerate(RANGE_SECONDS):
+        ticks = seconds * rules.TICK_HZ
+        count = len(frames) - ticks
+        if count > 0:
+            targets[:count, column] = (distance[ticks:] - distance[:-ticks]) / (2 * rules.SPEED * seconds)
+    return targets
+
+
+def map_frame_weights(maps, lengths):
+    games = Counter(maps)
+    total = sum(lengths)
+    return np.concatenate([
+        np.full(count, total / (len(games) * games[layout] * count), dtype=np.float32)
+        for layout, count in zip(maps, lengths, strict=True)
+    ])
+
+
+def fit_maneuvers(x, y, seed, epochs, *, future=None, range_weight=1.0, frame_weights=None):
     rng = np.random.default_rng(seed % (2**64))
     mean, scale = x.mean(axis=0), np.maximum(x.std(axis=0), .08)
     x = (x - mean) / scale
@@ -176,6 +202,10 @@ def fit_maneuvers(x, y, seed, epochs):
     for i, (fan_in, fan_out) in enumerate(zip(widths, widths[1:]), start=1):
         params[f"w{i}"] = rng.normal(0, 1 / np.sqrt(fan_in), (fan_in, fan_out)).astype(np.float32)
         params[f"b{i}"] = np.zeros(fan_out, dtype=np.float32)
+    if future is not None:
+        # Same action initialization and minibatch order as the single-frame control.
+        params["w_range"] = np.zeros((widths[-2], future.shape[1]), dtype=np.float32)
+        params["b_range"] = np.zeros(future.shape[1], dtype=np.float32)
     momentum = {k: np.zeros_like(v) for k, v in params.items()}
     velocity = {k: np.zeros_like(v) for k, v in params.items()}
     step = 0
@@ -206,10 +236,24 @@ def fit_maneuvers(x, y, seed, epochs):
             fire_mask = valid_fire[take]
             ds[:, 20] = (fire_probability - fire[take]) * fire_mask / max(1, fire_mask.sum())
 
-            dh2 = (ds @ params["w3"].T) * (1 - h2*h2)
+            if frame_weights is not None:
+                ds *= frame_weights[take, None]
+            hidden_gradient = ds @ params["w3"].T
+            gradients = {}
+            if future is not None:
+                target = future[take]
+                valid = np.isfinite(target)
+                error = h2 @ params["w_range"] + params["b_range"] - target
+                dr = np.where(valid, np.clip(error, -1, 1), 0) * (range_weight / max(1, valid.sum()))
+                dr = dr.astype(np.float32, copy=False)
+                if frame_weights is not None:
+                    dr *= frame_weights[take, None]
+                gradients.update(w_range=h2.T @ dr, b_range=dr.sum(axis=0))
+                hidden_gradient += dr @ params["w_range"].T
+            dh2 = hidden_gradient * (1 - h2*h2)
             dh1 = (dh2 @ params["w2"].T) * (1 - h1*h1)
-            gradients = {"w1": batch.T @ dh1, "b1": dh1.sum(axis=0), "w2": h1.T @ dh2,
-                         "b2": dh2.sum(axis=0), "w3": h2.T @ ds, "b3": ds.sum(axis=0)}
+            gradients.update(w1=batch.T @ dh1, b1=dh1.sum(axis=0), w2=h1.T @ dh2,
+                             b2=dh2.sum(axis=0), w3=h2.T @ ds, b3=ds.sum(axis=0))
             step += 1
             for key, gradient in gradients.items():
                 if key.startswith("w"):
@@ -218,6 +262,8 @@ def fit_maneuvers(x, y, seed, epochs):
                 velocity[key] = .999 * velocity[key] + .001 * gradient**2
                 params[key] -= .002 * (momentum[key] / (1 - .9**step)) / (
                     np.sqrt(velocity[key] / (1 - .999**step)) + 1e-8)
+    if future is not None:
+        del params["w_range"], params["b_range"]
     return params | {"mean": mean, "scale": scale, "speeds": speeds, "turn_centers": turn_centers}
 
 
@@ -259,7 +305,7 @@ def selected_ids(params, key):
 
 def load_splits(folder, request):
     params = request["params"]
-    if unknown := params.keys() - {"train_ids", "holdout_ids", "epochs", "policy"}:
+    if unknown := params.keys() - {"train_ids", "holdout_ids", "epochs", "policy", "range_weight", "balance_maps"}:
         raise ValueError(f"未知训练参数 {', '.join(sorted(unknown))}")
     train_ids, holdout_ids = selected_ids(params, "train_ids"), selected_ids(params, "holdout_ids")
     if set(train_ids) & set(holdout_ids):
@@ -291,14 +337,28 @@ def main(request_path):
     if type(epochs) is not int or not 1 <= epochs <= 200:
         raise ValueError("epochs 必须为 1 到 200 的整数")
     policy = request["params"].get("policy", "maneuver-evasion")
-    if policy not in ("legacy", "maneuver", "maneuver-evasion"):
-        raise ValueError("policy 必须为 legacy、maneuver 或 maneuver-evasion")
+    if policy not in ("legacy", "maneuver", "maneuver-evasion", "range-evasion"):
+        raise ValueError("未知训练策略 " + str(policy))
+    range_weight = request["params"].get("range_weight", 1.0)
+    balance = request["params"].get("balance_maps", False)
+    if type(balance) is not bool or (balance and policy != "range-evasion"):
+        raise ValueError("balance_maps 是 range-evasion 的布尔参数")
+    if ("range_weight" in request["params"] and policy != "range-evasion"
+            or type(range_weight) not in (int, float) or not 0 < range_weight <= 10):
+        raise ValueError("range_weight 仅用于 range-evasion，范围为 (0, 10]")
     feature_type, fit = (Features, adam_fit) if policy == "legacy" else (ManeuverFeatures, fit_maneuvers)
     seed = request["config"]["sampling_seed"]
     train_xs, train_ys = zip(*(extract(replay, feature_type) for replay, _ in train))
     train_x, train_y = np.concatenate(train_xs), np.concatenate(train_ys)
-    weights = fit(train_x, train_y, seed, epochs)
-    if policy == "maneuver-evasion":
+    if policy == "range-evasion":
+        future = np.concatenate([future_range_changes(replay["frames"]) for replay, _ in train])
+        frame_weights = (map_frame_weights([rep["map"]["grid"] for rep, _ in train], list(map(len, train_xs)))
+                         if balance else None)
+        weights = fit_maneuvers(train_x, train_y, seed, epochs, future=future, range_weight=range_weight,
+                                frame_weights=frame_weights)
+    else:
+        weights = fit(train_x, train_y, seed, epochs)
+    if policy in ("maneuver-evasion", "range-evasion"):
         weights["evade_incoming"] = np.asarray(True)
     holdout_xs, holdout_ys = zip(*(extract(replay, feature_type) for replay, _ in holdout))
     record = {
@@ -320,6 +380,8 @@ def main(request_path):
         "train": [replay_source(replay, digest) for replay, digest in train],
         "holdout": [replay_source(replay, digest) for replay, digest in holdout],
         "metrics_scope": "nominal_action",
+        **({"range_seconds": RANGE_SECONDS, "range_weight": range_weight, "balance_maps": balance}
+           if policy == "range-evasion" else {}),
         "metrics": record,
     })
     write_json(output / "result.json", {"weights": "strategy/weights.npz", "step": epochs,

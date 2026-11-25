@@ -44,6 +44,37 @@ def test_forward_labels_follow_sdk_wall_sliding(trainer):
     assert trainer.recover_forward(game_map, next_own, enemy, stationary) == 0
 
 
+def test_future_range_targets_use_only_complete_windows_from_one_match(trainer):
+    ticks = 3 * rules.TICK_HZ
+    frames = [(i, [0, 0], [1 + i * rules.SPEED * rules.DT, 0], [], []) for i in range(ticks + 1)]
+    targets = trainer.future_range_changes(frames)
+    assert targets.shape == (ticks, 2)
+    np.testing.assert_allclose(targets[0], [.5, .5], rtol=1e-5)
+    assert np.isnan(targets[1:, 1]).all()
+    assert np.isnan(targets[-rules.TICK_HZ + 1:, 0]).all()
+    reflected = [(i, blue, red, shells, effects) for i, red, blue, shells, effects in frames]
+    np.testing.assert_equal(trainer.future_range_changes(reflected), targets)
+    assert np.isnan(trainer.future_range_changes(frames[:2])).all()
+
+
+def test_range_head_preserves_action_control_when_no_labels_are_available(trainer):
+    rng = np.random.default_rng(7)
+    x = rng.normal(size=(40, 5)).astype(np.float32)
+    y = rng.choice([-1., 1.], size=(40, 3)).astype(np.float32)
+    y[:, 2] = y[:, 2] > 0
+    control = trainer.fit_maneuvers(x, y, 7, 2)
+    future = np.full((40, 2), np.nan, dtype=np.float32)
+    masked = trainer.fit_maneuvers(x, y, 7, 2, future=future)
+    assert masked.keys() == control.keys()
+    for key in control:
+        np.testing.assert_array_equal(masked[key], control[key])
+
+
+def test_map_balancing_equalizes_layouts_and_matches_within_each_layout(trainer):
+    w = trainer.map_frame_weights(["a", "a", "b"], [2, 4, 6])
+    np.testing.assert_allclose([w[:2].sum(), w[2:6].sum(), w[6:].sum(), w.mean()], [3, 3, 6, 1])
+
+
 @pytest.mark.parametrize("feature_name", ["Features", "ManeuverFeatures"])
 def test_extract_matches_observations_and_blue_action_timing(trainer, feature_name):
     game_map = generate_map(73129)

@@ -55,6 +55,7 @@ def test_event_tracks_one_shell_and_scores_actual_and_simulated_outcomes():
     assert details[0]["predicted_perpendicular_cells"] == 0
     recovered, calibrated = branch(trace, None, 0, (5, 10, 20), events, 0)
     assert recovered[20]["position_error_cells"] == pytest.approx(0)
+    assert recovered[20]["signed_range_error_cells"] == pytest.approx(0)
     assert calibrated[0]["predicted_hit"] is False
 
     struck = replay_with_incoming_shell(IDLE)

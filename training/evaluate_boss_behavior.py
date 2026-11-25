@@ -275,8 +275,11 @@ def branch(trace, factory, start, horizons, events, history_frames):
         if elapsed in horizons:
             tank = game.tanks[side]
             observed = trace.frames[start + elapsed][side + 1]
+            ex, ey = trace.frames[start + elapsed][opposing + 1][:2]
+            range_error = hypot(tank.x - ex, tank.y - ey) - hypot(observed[0] - ex, observed[1] - ey)
             result[elapsed] = {
                 "position_error_cells": hypot(tank.x - observed[0], tank.y - observed[1]),
+                "signed_range_error_cells": range_error,
                 "heading_error_deg": abs(ang_diff(tank.h, observed[2])),
                 "health_error_hp": tank.hp - observed[3],
                 "predicted_dead": not tank.alive,
@@ -317,6 +320,8 @@ def summarize_trajectory(samples, threats):
         rows = [row for row in samples if row["horizon_ticks"] == horizon]
         return {
             "position_error_cells": distribution(r["position_error_cells"] for r in rows),
+            "range_error_cells": distribution(abs(r["signed_range_error_cells"]) for r in rows),
+            "range_bias_cells": distribution(r["signed_range_error_cells"] for r in rows),
             "heading_error_deg": distribution(r["heading_error_deg"] for r in rows),
             "health_error_hp": distribution(abs(r["health_error_hp"]) for r in rows),
             "opponent_endpoint_error_cells": distribution(r["opponent_endpoint_error_cells_mean"] for r in rows),

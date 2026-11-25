@@ -102,7 +102,23 @@ def verify_unseen(root, model, replays):
             raise ValueError(f"回放 {replay_id} 与 {model} 的训练或选模数据重复")
 
 
-def matched_games(root, models, candidates, seeds, save_dir=None, *, replay_ids=None, require_unseen=False):
+def common_alive_distances(official, local_replays):
+    distances = [[] for _ in range(len(local_replays) + 1)]
+    for frames in zip(official["frames"], *(replay["frames"] for replay in local_replays)):
+        if any(frame[0] != frames[0][0] for frame in frames[1:]):
+            raise ValueError(f"官网回放与本地复跑的帧号不一致 {official['match']['id']}")
+        if not all(red[4] and blue[4] for _, red, blue, _, _ in frames):
+            break
+        for values, (_, red, blue, _, _) in zip(distances, frames, strict=True):
+            values.append(hypot(blue[0] - red[0], blue[1] - red[1]))
+    if not distances[0]:
+        raise ValueError(f"官网回放与本地复跑没有双方存活的共同帧 {official['match']['id']}")
+    reference = {"frames": len(distances[0]), "official_median_distance_cells": median(distances[0])}
+    return [reference | {"local_median_distance_cells": median(values)} for values in distances[1:]]
+
+
+def matched_games(root, models, candidates, seeds, save_dir=None, *, replay_ids=None,
+                  require_unseen=False, include_common_alive=False):
     for keys in (models, candidates, seeds):
         if len(set(keys)) != len(keys):
             raise ValueError("快照或地图种子重复")
@@ -122,6 +138,7 @@ def matched_games(root, models, candidates, seeds, save_dir=None, *, replay_ids=
             remote = summarize_match(replay, side) | {
                 "reason": replay["result"]["reason"], "score": replay["result"]["scores"][side]["total"],
             }
+            local_replays, rows = [], []
             for model in models:
                 bots = [versions.load_bot(root, candidate), versions.load_bot(root, model)]
                 if side:
@@ -136,7 +153,7 @@ def matched_games(root, models, candidates, seeds, save_dir=None, *, replay_ids=
                 if save_dir is not None:
                     save(save_dir / model / f"{replay_id}.json.gz", local_replay)
                 until = min(match["result"]["ticks"], replay["result"]["ticks"])
-                games.append({
+                rows.append({
                     "replay_id": replay_id, "candidate": candidate, "model": model, "seed": seed,
                     "challenger_side": "blue" if side else "red", "game": game_no,
                     "official": remote,
@@ -148,5 +165,11 @@ def matched_games(root, models, candidates, seeds, save_dir=None, *, replay_ids=
                         "local": summarize_match(local_replay, side, until=until),
                     },
                 })
+                if include_common_alive:
+                    local_replays.append(local_replay)
+            if include_common_alive:
+                for row, distance in zip(rows, common_alive_distances(replay, local_replays), strict=True):
+                    row["common_alive"] = distance
+            games.extend(rows)
     return {"rules": rules.as_dict()["version"], "models": models, "candidates": candidates,
             "seeds": seeds, "ids": sorted(replays), "require_unseen": require_unseen, "games": games}
