@@ -17,6 +17,8 @@ from .workspace import project_root, read_json
 
 ROTATION = (("approach", "silent", "pulse"), ("approach", "retreat", "peek"),
             ("peek", "late-zone", "lancer"), ("retreat", "late-zone", "silent"))
+BOSS_ROTATION = (("approach", "silent", "pulse"), ("approach", "lancer", "retreat"),
+                 ("approach", "lancer", "peek"), ("approach", "lancer", "late-zone"))
 RUN = re.compile(r"sample-[a-f0-9]{32}")
 
 
@@ -112,8 +114,9 @@ def start(root, *, target, maps=None, seed=None, names=None, mode="active", inte
         if names is not None and (not names or len(names) != len(set(names))):
             raise ValueError("采样打法不能为空或重复")
         snaps = probes.snapshots(root, names or probes.catalog().keys())
-        plan.update(seed=seed, maps=maps, probes=names, rotation=ROTATION if not names else None,
-                    versions=snaps, width=len(names) if names else len(ROTATION[0]))
+        rotation = BOSS_ROTATION if target == "boss" else ROTATION
+        plan.update(seed=seed, maps=maps, probes=names, rotation=None if names else rotation,
+                    versions=snaps, width=len(names) if names else len(rotation[0]))
     key = "sample-" + uuid4().hex
     with data.database(root) as db:
         db.execute("INSERT INTO runs(id,plan,state,updated) VALUES (?,?,?,?)",

@@ -181,3 +181,23 @@ def test_rotation_keeps_matched_controls_and_distinct_seeds():
     assert len({g[0] for g in groups}) == 8
     assert {"approach", "silent"}.issubset(g[1] for g in groups[:3])
     assert all(0 <= g[0] < 2**31 for g in groups)
+
+
+def test_boss_start_freezes_pressure_and_late_game_mix(tmp_path, monkeypatch):
+    monkeypatch.setattr(sampling, "check_host", lambda root: None)
+    monkeypatch.setattr(sampling.probes, "snapshots", lambda root, names: {name: name for name in names})
+    monkeypatch.setattr(sampling, "launch", lambda root, key, foreground: key)
+
+    def open_plan(target, names=None):
+        key = sampling.start(tmp_path, target=target, maps=4, seed=123, names=names)
+        return sampling.record(tmp_path, key)["plan"]
+
+    plan = open_plan("boss")
+    cycle = [[sampling.case(plan, step)[1] for step in range(start, start + 3)] for start in range(0, 12, 3)]
+    assert cycle[0] == ["approach", "silent", "pulse"]
+    assert all("approach" in group for group in cycle)
+    assert sum("lancer" in group for group in cycle) == 3
+    assert {name for group in cycle for name in group} == set(sampling.probes.catalog())
+    assert open_plan("rookie")["rotation"] == [list(group) for group in sampling.ROTATION]
+    custom = open_plan("boss", ["peek"])
+    assert custom["rotation"] is None and sampling.case(custom, 1)[1] == "peek"
