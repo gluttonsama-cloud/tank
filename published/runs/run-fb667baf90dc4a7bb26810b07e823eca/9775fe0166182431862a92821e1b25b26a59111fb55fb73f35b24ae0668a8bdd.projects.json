@@ -1,0 +1,29 @@
+{
+  "v-53d70ef17f5acaad7db5192f8431cc340e74aa0f5695a85c2cdbb59005478301": [
+    {
+      "id": "boss-specialist",
+      "name": "终极人机专项",
+      "kind": "rl",
+      "purpose": "pve",
+      "number": 4
+    }
+  ],
+  "v-8eafb7605945a640bfaf4dd85d6920dc75df3fcd5fa42a32ada7d7dcbd41af26": [
+    {
+      "id": "boss-sparring",
+      "name": "终极档近似陪练",
+      "kind": "imitation",
+      "purpose": "bot_sparring",
+      "number": 31
+    }
+  ],
+  "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c": [
+    {
+      "id": "basic-specialist",
+      "name": "基础人机专项",
+      "kind": "hybrid",
+      "purpose": "pve",
+      "number": 7
+    }
+  ]
+}

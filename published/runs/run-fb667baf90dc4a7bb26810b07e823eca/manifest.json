@@ -1,0 +1,54 @@
+{
+  "baseline": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+  "candidates": [
+    "v-53d70ef17f5acaad7db5192f8431cc340e74aa0f5695a85c2cdbb59005478301"
+  ],
+  "engine": {
+    "runner_sha256": "85315b0390c95ffde94de47564594448cce8bdc85d59c39a3bb02edd2fc922bf",
+    "sdk_sha256": "4e4118c71107fdfc6c99a2209b6db552ef9ff40601035112534f6ba3abd04e5b",
+    "source_sha256": "66139c48186dae7f25cdb20ca3a54ee69f39401ecbf9d534d5f0ff782bd8d9bd"
+  },
+  "format": 1,
+  "mode": "opponent",
+  "replay": false,
+  "run_id": "run-fb667baf90dc4a7bb26810b07e823eca",
+  "shards": 4,
+  "suite": {
+    "game_no_start": 0,
+    "name": "boss-specialist",
+    "opponents": [
+      "v-8eafb7605945a640bfaf4dd85d6920dc75df3fcd5fa42a32ada7d7dcbd41af26"
+    ],
+    "repeats": 1,
+    "rules_version": "2.6-prelim",
+    "seeds": [
+      1646163099,
+      1640095364,
+      1647294084,
+      1642905681,
+      1640377947,
+      1640879251,
+      1648429669,
+      1643073500,
+      1641475204,
+      1642794959,
+      1644239423,
+      1640712193,
+      1646204453,
+      1642314062,
+      1644656454,
+      1649597844,
+      1643112947,
+      1647205588,
+      1648854431,
+      1646064557
+    ],
+    "sides": [
+      "red",
+      "blue"
+    ],
+    "suite_id": "suite-bf2e72b59dd8956c1655e06061302f7f67a66dcf9c569647dd8c8c57f0e7034a",
+    "version": 1
+  },
+  "timeout": 120
+}
