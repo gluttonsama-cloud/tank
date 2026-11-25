@@ -1,0 +1,9 @@
+{
+  "name": "基础人机专项",
+  "kind": "hybrid",
+  "purpose": "pve",
+  "sources": [
+    "basic-specialist"
+  ],
+  "training": []
+}
