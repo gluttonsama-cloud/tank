@@ -4,6 +4,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 from seedcup.game import Game, GameMap, generate_map, rules
+from seedcup.game.bots import wall_grid
+from seedcup.game.engine import STILL, Shell
 from seedcup.game.maps import Spawn
 from seedcup.game.replay import FORMAT_VERSION, ReplayRecorder
 from seedcup.game.runner import match_info
@@ -42,14 +44,16 @@ def test_forward_labels_follow_sdk_wall_sliding(trainer):
     assert trainer.recover_forward(game_map, next_own, enemy, stationary) == 0
 
 
-def test_extract_matches_observations_and_blue_action_timing(trainer):
-    game_map = generate_map(42)
+@pytest.mark.parametrize("feature_name", ["Features", "ManeuverFeatures"])
+def test_extract_matches_observations_and_blue_action_timing(trainer, feature_name):
+    game_map = generate_map(73129)
     game = Game(game_map)
     game.tanks[1].h = 5
     meta = {"id": 123, "red": {"bot": False, "name": "red"},
             "blue": {"bot": True, "name": trainer.BOSS_NAME}}
     recorder = ReplayRecorder(game_map, meta)
-    features = trainer.Features(match_info(game_map, 1, ""))
+    feature_type = getattr(trainer, feature_name)
+    features = feature_type(match_info(game_map, 1, ""))
     expected = []
     idle = {"forward": 0, "turn": 0, "fire": False}
     recorder.add(game.snapshot(), [])
@@ -60,7 +64,7 @@ def test_extract_matches_observations_and_blue_action_timing(trainer):
         action = {"forward": 0, "turn": -1, "fire": fire}
         fx = game.step([idle, action])
         recorder.add(game.snapshot(), fx)
-    x, y = trainer.extract(recorder.to_dict({"ticks": rules.RELOAD_TICKS + 1}))
+    x, y = trainer.extract(recorder.to_dict({"ticks": rules.RELOAD_TICKS + 1}), feature_type)
     np.testing.assert_allclose(x, expected, atol=1e-6)
     np.testing.assert_allclose(y[:, 1], 1, atol=0.01)
     assert y[0, 2] == y[-1, 2] == 1
@@ -96,3 +100,31 @@ def test_decode_checks_reload_and_reachable_aim(trainer):
     np.testing.assert_allclose(forward, [1, 1, 1, 1])
     np.testing.assert_allclose(turn, [-.7, -.34, 1, .2])
     assert fire.tolist() == [True, False, False, False]
+
+
+def test_maneuver_turn_stays_in_selected_mode(trainer):
+    features = np.array([[0.5, -.7, .1, 1], [0.5, -.7, .1, 1]])
+    scores = np.zeros((2, 21))
+    scores[0, 0], scores[1, 14] = 3, 3
+    scores[:, 15], scores[:, 19] = .9, -.9
+    weights = {"speeds": np.array([-1, 0, 1]), "turn_centers": np.array([-1, -.2, 0, .2, 1])}
+    forward, turn, fire = trainer.decode(features, scores, weights)
+    np.testing.assert_allclose(forward, [-1, 1])
+    np.testing.assert_allclose(turn, [-.9, .9])
+    assert not fire.any()
+
+
+@pytest.mark.parametrize("covered", [False, True])
+def test_evasion_only_changes_a_threatened_action(trainer, covered):
+    from boss_sparring_policy import EVADE_TICKS, EvadeIncoming
+
+    grid = bytes(covered and x == 8 and y == 12 for y in range(rules.H) for x in range(rules.W))
+    game_map = GameMap(1, grid, 0, 0, (Spawn(10, 12.5, 90), Spawn(20, 12.5, 180)))
+    game = Game(game_map, shells=[Shell(1, 1, 7, 12.5, 1, 0)])
+    info = match_info(game_map, 0, "")
+    evade = EvadeIncoming(info, wall_grid(info))
+    action = evade(game.observe(0), STILL)
+    assert (action == STILL) == covered
+    for _ in range(EVADE_TICKS):
+        game.step([action, STILL])
+    assert game.tanks[0].hp == rules.HP

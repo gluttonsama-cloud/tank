@@ -34,16 +34,25 @@ def pair_results(by_version, games, seeds):
     return pairs
 
 
-def official_cases(root, candidates, seeds):
+def official_cases(root, candidates, seeds, *, replay_ids=None):
+    requested = None if replay_ids is None else set(replay_ids)
+    if requested is not None and (not requested or len(requested) != len(replay_ids)):
+        raise ValueError("官网回放 ID 必须非空且不重复")
+    found = set()
     cases = {}
     for candidate in candidates:
         folder = root / ".local/online/practice" / candidate / "boss"
         for record_path in sorted(folder.glob("*.json")):
             record = read_json(record_path)
+            replay_id = record["id"]
+            if requested is not None and replay_id not in requested:
+                continue
             seed = record.get("map_seed", record["seed"])
             if seed not in seeds:
                 continue
-            replay = load(root / ".local/online/replays" / f"{record['id']}.json.gz")
+            replay = load(root / ".local/online/replays" / f"{replay_id}.json.gz")
+            if replay["match"]["id"] != replay_id:
+                raise ValueError(f"回放内的对局 ID 与练习记录不一致 {replay_id}")
             game_map = replay["map"]
             side = ("red", "blue").index(record["side"])
             if game_map["seed"] != seed:
@@ -52,7 +61,15 @@ def official_cases(root, candidates, seeds):
             if any(regenerated[k] != game_map[k] for k in ("grid", "spawns")):
                 raise ValueError(f"SDK 生成的地图与官网不同 {record['id']}")
             key = candidate, game_map["seed"], side
+            if requested is not None:
+                if replay_id in found:
+                    raise ValueError(f"对局 {replay_id} 对应多条练习记录")
+                if key in cases:
+                    raise ValueError(f"每个策略、地图和出生侧只能指定一局 {key}")
+                found.add(replay_id)
             cases.setdefault(key, []).append((record, replay["match"]["game"]))
+    if requested is not None and requested != found:
+        raise ValueError(f"指定的回放未匹配所选策略与地图的练习记录 {sorted(requested - found)}")
     missing = [(v, seed, side) for v in candidates for seed in seeds
                for side in range(2) if (v, seed, side) not in cases]
     if missing:

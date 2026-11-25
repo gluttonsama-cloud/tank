@@ -1,13 +1,34 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "rules": "2.6-prelim",
   "seed": 2026,
   "epochs": 36,
+  "policy": "maneuver-evasion",
   "source_sha256": {
-    "fit_boss_sparring.py": "febd5cd2cd1693a22dc7d7716a3155c8e1e04b7eee2aeac259ddcd3abbcb0b44",
-    "boss_sparring_policy.py": "e75a90d312b10dc6eafb9f331f3684dd0ed3c03fa8e6aa78e737fa68e56787c9"
+    "fit_boss_sparring.py": "3e6619dfe7c2461a2fb00955bf900d4feb0171090be2634cc4fe494319b1ef0b",
+    "boss_sparring_policy.py": "47b269bd7ba0a14eecec210c357c9bfd69b7de39817e07e67a7ceb18fc0a4d74"
   },
   "train": [
+    {
+      "id": 9463,
+      "seed": 733076614,
+      "sha256": "c628a3558f03abeefee9ad0bd8b944ce3cc7b2c271b4bb722dc54a81a325d63f"
+    },
+    {
+      "id": 9466,
+      "seed": 733076614,
+      "sha256": "02c62db0bc670e50c5298d710ca8000dad84ac2e2014517f36f7771b60336df1"
+    },
+    {
+      "id": 9470,
+      "seed": 1411232842,
+      "sha256": "4a8538a13372a029c00ba5cd4527ba71452a4dddeb4f1586ee176eba08f40417"
+    },
+    {
+      "id": 9472,
+      "seed": 1411232842,
+      "sha256": "1a2eb8932f0972b46eddfd7b14296ec38c532af3b8158b3a1f812e66aeedf66f"
+    },
     {
       "id": 14053,
       "seed": 1200500144,
@@ -62,6 +83,86 @@
       "id": 14184,
       "seed": 34729,
       "sha256": "f6283bcc5ec43b5ebb3a594968e83ed7755d1a393f7e9b3e977b76602d02ce32"
+    },
+    {
+      "id": 14219,
+      "seed": 8107,
+      "sha256": "45cda269e27d6414d423120f0952495d6517dd4278526a29d2acaa06786227c7"
+    },
+    {
+      "id": 14226,
+      "seed": 8107,
+      "sha256": "8a1a10b3a52f67035590f49f1629813da8a1211074273702067d5ae62abefb31"
+    },
+    {
+      "id": 14231,
+      "seed": 8107,
+      "sha256": "d84dcee3c9ee23a425e733ec620e5e7ba78871233b05b86920550d919c708fcc"
+    },
+    {
+      "id": 14245,
+      "seed": 8107,
+      "sha256": "2effcde96e2be99ad7fc5b20a8f53753217e8b00b77f08a2d3a908a6c4210ff9"
+    },
+    {
+      "id": 14261,
+      "seed": 8107,
+      "sha256": "28b4fe2eb6cd1cbcb8abc01fedbf203047363697f2985de7693bbf07ef24410d"
+    },
+    {
+      "id": 14282,
+      "seed": 8107,
+      "sha256": "b03f5c3c38011e85986af354986c172049c1de62ab26ad023846fa79637ce3b7"
+    },
+    {
+      "id": 14300,
+      "seed": 8107,
+      "sha256": "79f50c0fd42ad341e0b3e49ad36fcf08f17055c1cefe139a05a1c0f8e57c5d7e"
+    },
+    {
+      "id": 14314,
+      "seed": 8107,
+      "sha256": "0daf8e4d3287dffe93f79b0926827995d24d91fee05a58e9e03a2e6681c45b1d"
+    },
+    {
+      "id": 14333,
+      "seed": 44917,
+      "sha256": "f4fcecbf8f988b7e7dcb7607b86724bcd24f8e47fb97c364c97b6f6ee9d9091e"
+    },
+    {
+      "id": 14336,
+      "seed": 44917,
+      "sha256": "7d0edab02014ab6177c949dc9d5f1cd20e56e1f8fdf91525a9f1c6c94de480d8"
+    },
+    {
+      "id": 14341,
+      "seed": 44917,
+      "sha256": "6cd0e4aabfae7726ad06bb0eee33bca910e66d17b0538986e0374968c90ef108"
+    },
+    {
+      "id": 14360,
+      "seed": 44917,
+      "sha256": "6dfea784379713d504a3fe5ddc1f02a23fc84d2a619c902b1be81df1f4bb4dc1"
+    },
+    {
+      "id": 14374,
+      "seed": 44917,
+      "sha256": "a0fccbdd6c63702981f74adf2b2c3dfd341ba757bce1a45e45938536bb136f77"
+    },
+    {
+      "id": 14395,
+      "seed": 44917,
+      "sha256": "b81835e5d08cf926d0294eefe65a718d0ed7c0ab1a6e7e81eeedcc6e5a5086a9"
+    },
+    {
+      "id": 14417,
+      "seed": 44917,
+      "sha256": "e967deb7d42ed18b61de70693457e3f568441d5e8d656a52a48078629acf410e"
+    },
+    {
+      "id": 14431,
+      "seed": 44917,
+      "sha256": "332d935e965dc3dbd25a48206b65443f3dee570e11e81d23c9ce78921534a3e7"
     }
   ],
   "holdout": [
@@ -74,53 +175,134 @@
       "id": 14200,
       "seed": 96671,
       "sha256": "cc7aa26c11136cf491c3700c47beb65362f8909519220f6800804b29ccce6b1e"
+    },
+    {
+      "id": 14586,
+      "seed": 715121,
+      "sha256": "dd75dac3fb91acc6947a1940b17e5c7972cac4fbfe7d5d56f976cf97bd49a4d4"
+    },
+    {
+      "id": 14591,
+      "seed": 715121,
+      "sha256": "e5ec15c802df3a2c4d7b8c48c26b745ac63e55e6388edbd5a55fb1cc1207d209"
+    },
+    {
+      "id": 14596,
+      "seed": 715121,
+      "sha256": "88467b203ede12a417fd33da8cb805d706c1442071e947862bef6e4aead46dd5"
+    },
+    {
+      "id": 14598,
+      "seed": 715121,
+      "sha256": "360331eff4f770eb1f8a8a7532d09052556b0091e04575b3867935e062ffd441"
     }
   ],
+  "metrics_scope": "nominal_action",
   "metrics": {
     "train": {
-      "frames": 6325,
-      "forward_labels": 6151,
-      "fire_labels": 1431,
-      "forward_accuracy": 0.7018370996585921,
-      "turn_mae": 0.44594916701316833,
-      "observed_shots": 355,
-      "predicted_shots": 354,
-      "fire_precision": 0.9717514124293786,
-      "fire_recall": 0.9690140845070423
+      "frames": 19728,
+      "forward_labels": 19328,
+      "fire_labels": 4047,
+      "forward_accuracy": 0.7614341887417219,
+      "turn_mae": 0.3514960333954732,
+      "observed_full_turn_rate": 0.5187550689375506,
+      "predicted_full_turn_rate": 0.539588402270884,
+      "observed_shots": 1137,
+      "predicted_shots": 1115,
+      "fire_precision": 0.9946188340807175,
+      "fire_recall": 0.9753737906772207
     },
     "holdout": {
-      "frames": 1667,
-      "forward_labels": 1315,
-      "fire_labels": 631,
-      "forward_accuracy": 0.6425855513307985,
-      "turn_mae": 0.5850582122802734,
-      "observed_shots": 74,
-      "predicted_shots": 78,
-      "fire_precision": 0.8461538461538461,
-      "fire_recall": 0.8918918918918919
+      "frames": 2524,
+      "forward_labels": 2093,
+      "fire_labels": 891,
+      "forward_accuracy": 0.7157190635451505,
+      "turn_mae": 0.6049664725552102,
+      "observed_full_turn_rate": 0.5519017432646592,
+      "predicted_full_turn_rate": 0.6426307448494454,
+      "observed_shots": 120,
+      "predicted_shots": 112,
+      "fire_precision": 0.8928571428571429,
+      "fire_recall": 0.8333333333333334
     },
     "holdout_by_replay": {
       "14187": {
         "frames": 850,
         "forward_labels": 658,
         "fire_labels": 346,
-        "forward_accuracy": 0.6458966565349544,
-        "turn_mae": 0.6042039394378662,
+        "forward_accuracy": 0.723404255319149,
+        "turn_mae": 0.6370320522007259,
+        "observed_full_turn_rate": 0.5364705882352941,
+        "predicted_full_turn_rate": 0.6082352941176471,
         "observed_shots": 36,
-        "predicted_shots": 39,
-        "fire_precision": 0.7692307692307693,
-        "fire_recall": 0.8333333333333334
+        "predicted_shots": 36,
+        "fire_precision": 0.7777777777777778,
+        "fire_recall": 0.7777777777777778
       },
       "14200": {
         "frames": 817,
         "forward_labels": 657,
         "fire_labels": 285,
-        "forward_accuracy": 0.639269406392694,
-        "turn_mae": 0.5651389956474304,
+        "forward_accuracy": 0.680365296803653,
+        "turn_mae": 0.645340656535928,
+        "observed_full_turn_rate": 0.5593635250917993,
+        "predicted_full_turn_rate": 0.7184822521419829,
         "observed_shots": 38,
-        "predicted_shots": 39,
+        "predicted_shots": 36,
+        "fire_precision": 0.9166666666666666,
+        "fire_recall": 0.868421052631579
+      },
+      "14586": {
+        "frames": 201,
+        "forward_labels": 171,
+        "fire_labels": 61,
+        "forward_accuracy": 0.8421052631578947,
+        "turn_mae": 0.4951467980996738,
+        "observed_full_turn_rate": 0.6019900497512438,
+        "predicted_full_turn_rate": 0.6616915422885572,
+        "observed_shots": 11,
+        "predicted_shots": 8,
+        "fire_precision": 1.0,
+        "fire_recall": 0.7272727272727273
+      },
+      "14591": {
+        "frames": 181,
+        "forward_labels": 140,
+        "fire_labels": 55,
+        "forward_accuracy": 0.7285714285714285,
+        "turn_mae": 0.4510563799432216,
+        "observed_full_turn_rate": 0.5359116022099447,
+        "predicted_full_turn_rate": 0.5359116022099447,
+        "observed_shots": 10,
+        "predicted_shots": 9,
+        "fire_precision": 1.0,
+        "fire_recall": 0.9
+      },
+      "14596": {
+        "frames": 231,
+        "forward_labels": 226,
+        "fire_labels": 72,
+        "forward_accuracy": 0.672566371681416,
+        "turn_mae": 0.5841607106748758,
+        "observed_full_turn_rate": 0.6147186147186147,
+        "predicted_full_turn_rate": 0.6190476190476191,
+        "observed_shots": 12,
+        "predicted_shots": 10,
+        "fire_precision": 1.0,
+        "fire_recall": 0.8333333333333334
+      },
+      "14598": {
+        "frames": 244,
+        "forward_labels": 241,
+        "fire_labels": 72,
+        "forward_accuracy": 0.7344398340248963,
+        "turn_mae": 0.5824097558172786,
+        "observed_full_turn_rate": 0.4918032786885246,
+        "predicted_full_turn_rate": 0.5942622950819673,
+        "observed_shots": 13,
+        "predicted_shots": 13,
         "fire_precision": 0.9230769230769231,
-        "fire_recall": 0.9473684210526315
+        "fire_recall": 0.9230769230769231
       }
     }
   }

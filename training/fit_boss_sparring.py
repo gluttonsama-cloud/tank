@@ -11,7 +11,10 @@ from seedcup.game import GameMap, rules
 from seedcup.game.replay import FORMAT_VERSION, load
 from seedcup.game.runner import match_info
 
-from boss_sparring_policy import Features, angle_delta, decode, predict
+if __package__:
+    from .boss_sparring_policy import TURN_BOUNDS, Features, ManeuverFeatures, angle_delta, decode, predict
+else:
+    from boss_sparring_policy import TURN_BOUNDS, Features, ManeuverFeatures, angle_delta, decode, predict
 
 
 BOSS_NAME = "终极练习人机"
@@ -79,10 +82,10 @@ def recover_forward(game_map, own, enemy, after):
     return float(np.clip(speed / MOVE_STEP, -1, 1))
 
 
-def extract(replay):
+def extract(replay, feature_type=Features):
     game_map = GameMap.from_dict(replay["map"])
     side = boss_side(replay["match"])
-    extractor = Features(match_info(game_map, side, ""))
+    extractor = feature_type(match_info(game_map, side, ""))
     features, targets = [], []
     ticks = replay["result"]["ticks"]
     frames = replay["frames"]
@@ -152,7 +155,74 @@ def adam_fit(x, y, seed, epochs):
     return params | {"mean": mean, "scale": scale, "speeds": speeds}
 
 
+def fit_maneuvers(x, y, seed, epochs):
+    rng = np.random.default_rng(seed % (2**64))
+    mean, scale = x.mean(axis=0), np.maximum(x.std(axis=0), .08)
+    x = (x - mean) / scale
+    forward, turn, fire = y.T
+    valid_forward, valid_fire = np.isfinite(forward), np.isfinite(fire)
+    speed_class = np.where(forward > SPEED_THRESHOLD, 2, np.where(forward < -SPEED_THRESHOLD, 0, 1))
+    turn_class = np.searchsorted(TURN_BOUNDS, turn)
+    reverse, advance = forward[speed_class == 0], forward[speed_class == 2]
+    if not len(reverse) or not len(advance) or len(np.unique(fire[valid_fire])) != 2:
+        raise ValueError("训练数据须包含前进、后退、可发射时的发射与未发射样本")
+    speeds = np.asarray((np.median(reverse), 0, np.median(advance)), dtype=np.float32)
+    turn_centers = np.array([-1, -.2, 0, .2, 1], dtype=np.float32)
+    residual = turn - turn_centers[turn_class]
+    fire = np.nan_to_num(fire)
+
+    widths = (x.shape[1], 96, 64, 21)
+    params = {}
+    for i, (fan_in, fan_out) in enumerate(zip(widths, widths[1:]), start=1):
+        params[f"w{i}"] = rng.normal(0, 1 / np.sqrt(fan_in), (fan_in, fan_out)).astype(np.float32)
+        params[f"b{i}"] = np.zeros(fan_out, dtype=np.float32)
+    momentum = {k: np.zeros_like(v) for k, v in params.items()}
+    velocity = {k: np.zeros_like(v) for k, v in params.items()}
+    step = 0
+    for _ in range(epochs):
+        shuffled = rng.permutation(len(x))
+        for offset in range(0, len(x), 256):
+            take = shuffled[offset:offset + 256]
+            batch = x[take]
+            h1 = np.tanh(batch @ params["w1"] + params["b1"])
+            h2 = np.tanh(h1 @ params["w2"] + params["b2"])
+            scores = h2 @ params["w3"] + params["b3"]
+
+            joint = scores[:, :15].reshape(-1, 3, 5)
+            probabilities = np.exp(joint - joint.max(axis=(1, 2), keepdims=True))
+            probabilities /= probabilities.sum(axis=(1, 2), keepdims=True)
+            row = np.arange(len(take))
+            turn_at = turn_class[take]
+            known = valid_forward[take]
+            probabilities[row[known], speed_class[take][known], turn_at[known]] -= 1
+            # If wall contact makes speed ambiguous, marginalize it and still learn the turn.
+            masked = probabilities[row[~known], :, turn_at[~known]]
+            probabilities[row[~known], :, turn_at[~known]] -= masked / masked.sum(axis=1, keepdims=True)
+            ds = np.zeros_like(scores)
+            ds[:, :15] = probabilities.reshape(-1, 15) / len(take)
+            residual_index = 15 + turn_at
+            ds[row, residual_index] = (scores[row, residual_index] - residual[take]) / len(take)
+            fire_probability = 1 / (1 + np.exp(-np.clip(scores[:, 20], -30, 30)))
+            fire_mask = valid_fire[take]
+            ds[:, 20] = (fire_probability - fire[take]) * fire_mask / max(1, fire_mask.sum())
+
+            dh2 = (ds @ params["w3"].T) * (1 - h2*h2)
+            dh1 = (dh2 @ params["w2"].T) * (1 - h1*h1)
+            gradients = {"w1": batch.T @ dh1, "b1": dh1.sum(axis=0), "w2": h1.T @ dh2,
+                         "b2": dh2.sum(axis=0), "w3": h2.T @ ds, "b3": ds.sum(axis=0)}
+            step += 1
+            for key, gradient in gradients.items():
+                if key.startswith("w"):
+                    gradient += .001 * params[key]
+                momentum[key] = .9 * momentum[key] + .1 * gradient
+                velocity[key] = .999 * velocity[key] + .001 * gradient**2
+                params[key] -= .002 * (momentum[key] / (1 - .9**step)) / (
+                    np.sqrt(velocity[key] / (1 - .999**step)) + 1e-8)
+    return params | {"mean": mean, "scale": scale, "speeds": speeds, "turn_centers": turn_centers}
+
+
 def metrics(x, y, weights):
+    """Measure decoded one-frame actions, before any SDK evasion rollout."""
     forward, turn, fire = decode(x, predict(x, weights), weights)
     target_forward, target_turn, target_fire = y.T
     moving = np.isfinite(target_forward)
@@ -165,6 +235,8 @@ def metrics(x, y, weights):
         "forward_accuracy": float(np.mean(np.sign(forward[moving]) == np.where(
             abs(target_forward[moving]) > SPEED_THRESHOLD, np.sign(target_forward[moving]), 0))) if moving.any() else None,
         "turn_mae": float(np.mean(abs(turn - target_turn))),
+        "observed_full_turn_rate": float(np.mean(abs(target_turn) > .9)),
+        "predicted_full_turn_rate": float(np.mean(abs(turn) > .9)),
         "observed_shots": int(observed_fire.sum()), "predicted_shots": int(fired.sum()),
         "fire_precision": float(true_positive / fired.sum()) if fired.any() else None,
         "fire_recall": float(true_positive / observed_fire.sum()) if observed_fire.any() else None,
@@ -187,7 +259,7 @@ def selected_ids(params, key):
 
 def load_splits(folder, request):
     params = request["params"]
-    if unknown := params.keys() - {"train_ids", "holdout_ids", "epochs"}:
+    if unknown := params.keys() - {"train_ids", "holdout_ids", "epochs", "policy"}:
         raise ValueError(f"未知训练参数 {', '.join(sorted(unknown))}")
     train_ids, holdout_ids = selected_ids(params, "train_ids"), selected_ids(params, "holdout_ids")
     if set(train_ids) & set(holdout_ids):
@@ -218,11 +290,17 @@ def main(request_path):
     epochs = request["params"].get("epochs", 36)
     if type(epochs) is not int or not 1 <= epochs <= 200:
         raise ValueError("epochs 必须为 1 到 200 的整数")
+    policy = request["params"].get("policy", "maneuver-evasion")
+    if policy not in ("legacy", "maneuver", "maneuver-evasion"):
+        raise ValueError("policy 必须为 legacy、maneuver 或 maneuver-evasion")
+    feature_type, fit = (Features, adam_fit) if policy == "legacy" else (ManeuverFeatures, fit_maneuvers)
     seed = request["config"]["sampling_seed"]
-    train_xs, train_ys = zip(*(extract(replay) for replay, _ in train))
+    train_xs, train_ys = zip(*(extract(replay, feature_type) for replay, _ in train))
     train_x, train_y = np.concatenate(train_xs), np.concatenate(train_ys)
-    weights = adam_fit(train_x, train_y, seed, epochs)
-    holdout_xs, holdout_ys = zip(*(extract(replay) for replay, _ in holdout))
+    weights = fit(train_x, train_y, seed, epochs)
+    if policy == "maneuver-evasion":
+        weights["evade_incoming"] = np.asarray(True)
+    holdout_xs, holdout_ys = zip(*(extract(replay, feature_type) for replay, _ in holdout))
     record = {
         "train": metrics(train_x, train_y, weights),
         "holdout": metrics(np.concatenate(holdout_xs), np.concatenate(holdout_ys), weights),
@@ -236,11 +314,12 @@ def main(request_path):
     np.savez(strategy / "weights.npz", **weights)
     write_json(strategy / "submission.json", {"runtime": "python", "entrypoint": "bot.py:BossSparring"})
     write_json(strategy / "training.json", {
-        "schema_version": 1, "rules": rules.as_dict()["version"], "seed": seed, "epochs": epochs,
+        "schema_version": 2, "rules": rules.as_dict()["version"], "seed": seed, "epochs": epochs, "policy": policy,
         "source_sha256": {name: request["sources"][name] for name in (
             Path(__file__).name, "boss_sparring_policy.py")},
         "train": [replay_source(replay, digest) for replay, digest in train],
         "holdout": [replay_source(replay, digest) for replay, digest in holdout],
+        "metrics_scope": "nominal_action",
         "metrics": record,
     })
     write_json(output / "result.json", {"weights": "strategy/weights.npz", "step": epochs,

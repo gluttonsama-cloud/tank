@@ -1,17 +1,26 @@
 """SDK observations and NumPy inference for the replay-trained sparring bot."""
 
 from collections import deque
+from dataclasses import replace
 from math import atan2, cos, degrees, hypot, radians, sin, tau
 from pathlib import Path
 
 import numpy as np
 from seedcup import Bot
-from seedcup.game import rules
+from seedcup.game import Game, GameMap, rules
 from seedcup.game.bots import clear_shot, mirror_obs, ray_wall, wall_grid
+from seedcup.game.engine import STILL, Shell, Tank, ray_circle
+from seedcup.game.maps import Spawn
 
 
 def angle_delta(target, current):
     return (target - current + 180) % 360 - 180
+
+
+TURN_BOUNDS = np.array([-.9, -.075, .075, .9], dtype=np.float32)
+TURN_LOWER = np.concatenate(([-1], TURN_BOUNDS))
+TURN_UPPER = np.concatenate((TURN_BOUNDS, [1]))
+EVADE_TICKS = 5
 
 
 class Features:
@@ -120,13 +129,77 @@ class Features:
         ], dtype=np.float32)
 
 
+class ManeuverFeatures(Features):
+    def __init__(self, info):
+        super().__init__(info)
+        self.motion = deque(maxlen=20)
+        self.sight_run = 0
+        self.stall_run = 0
+
+    def __call__(self, obs):
+        base = super().__call__(obs)
+        x, y, ex, ey, heading, enemy_heading = self.history[-1]
+        h = radians(heading)
+        c, s = cos(h), sin(h)
+        position = (x, y, ex, ey, heading, enemy_heading)
+        context = []
+        for lag in (4, 10, 20):
+            width = min(lag, len(self.motion))
+            old = self.motion[-width] if width else position
+            window = max(1, width) * rules.SPEED * rules.DT
+            for old_x, old_y, new_x, new_y in ((old[0], old[1], x, y), (old[2], old[3], ex, ey)):
+                vx, vy = (new_x - old_x) / window, (new_y - old_y) / window
+                context.extend((c*vx + s*vy, c*vy - s*vx))
+            context.extend(angle_delta(current, previous) / 180
+                           for current, previous in zip(position[4:], old[4:], strict=True))
+        previous = self.motion[-1] if self.motion else position
+        self.motion.append(position)
+        if base[14]:
+            self.sight_run = max(0, self.sight_run) + 1
+        else:
+            self.sight_run = min(0, self.sight_run) - 1
+        self.stall_run = self.stall_run + 1 if hypot(x - previous[0], y - previous[1]) < .02 else 0
+
+        # A shell stopped by a wall cannot reach the current tank center.
+        threats = []
+        horizon = rules.SHELL_SPEED
+        shells = mirror_obs(obs)["shells"] if self.flip else obs["shells"]
+        for shell in shells:
+            if shell["mine"]:
+                continue
+            sx, sy = round(shell["x"], 2), round(shell["y"], 2)
+            vx, vy = round(shell["dx"], 3), round(shell["dy"], 3)
+            dx, dy = x - sx, y - sy
+            along = dx*vx + dy*vy
+            lateral = -dx*vy + dy*vx
+            if not (0 < along < horizon and abs(lateral) < 2):
+                continue
+            if ray_wall(self.walls, sx, sy, vx, vy, along) < along - rules.HIT_RADIUS:
+                continue
+            threats.append((along / horizon, lateral / 2, c*vx+s*vy, c*vy-s*vx))
+        threats = sorted(threats)[:2]
+        threats += [(1.0, 0.0, 0.0, 0.0)] * (2 - len(threats))
+        zone = obs["zone"]
+        future_margin = (rules.zone_radius(obs["frame"] + 30) - hypot(x - zone["x"], y - zone["y"])) / 20
+        enemy_aim = atan2(y - ey, x - ex) - radians(enemy_heading)
+        return np.concatenate((base[:-4], np.asarray([
+            *context, np.clip(self.sight_run / 20, -1, 1), min(self.stall_run, 20) / 20,
+            future_margin, sin(enemy_aim), cos(enemy_aim), *threats[0], *threats[1],
+        ], dtype=np.float32), base[-4:]))
+
+
 def predict(features, weights):
     x = (features - weights["mean"]) / weights["scale"]
     hidden = np.tanh(x @ weights["w1"] + weights["b1"])
+    if "w3" in weights:
+        hidden = np.tanh(hidden @ weights["w2"] + weights["b2"])
+        return hidden @ weights["w3"] + weights["b3"]
     return hidden @ weights["w2"] + weights["b2"]
 
 
 def decode(features, scores, weights):
+    if "turn_centers" in weights:
+        return decode_maneuver(features, scores, weights)
     forward = weights["speeds"][np.argmax(scores[..., :3], axis=-1)]
     turn = np.clip(scores[..., 3], -1, 1)
     reload, aim, margin, clear = np.moveaxis(features[..., -4:], -1, 0)
@@ -140,16 +213,89 @@ def decode(features, scores, weights):
     return forward, turn, fire
 
 
+def decode_maneuver(features, scores, weights):
+    joint = scores[..., :15].reshape(*scores.shape[:-1], 3, 5)
+    # Marginalize the speed over possible turns, then pick its most likely turn.
+    probability = np.exp(joint - joint.max(axis=(-2, -1), keepdims=True))
+    speed = np.argmax(probability.sum(axis=-1), axis=-1)
+    turn_scores = np.take_along_axis(joint, speed[..., None, None], axis=-2).squeeze(-2)
+    turn_index = np.argmax(turn_scores, axis=-1)
+    turn = weights["turn_centers"][turn_index] + np.take_along_axis(
+        scores[..., 15:20], turn_index[..., None], axis=-1).squeeze(-1)
+    turn = np.clip(turn, TURN_LOWER[turn_index], TURN_UPPER[turn_index])
+    reload, aim, margin, clear = np.moveaxis(features[..., -4:], -1, 0)
+    ticks = np.rint(reload * rules.RELOAD_TICKS)
+    aim_turn = np.clip(aim, -1, 1)
+    wants_fire = (ticks <= 1) & (scores[..., 20] >= 0) & (clear == 1)
+    fire = wants_fire & (np.abs(aim - aim_turn) <= margin)
+    turn = np.where(fire, aim_turn, turn)
+    return weights["speeds"][speed], turn, fire
+
+
+class EvadeIncoming:
+    def __init__(self, info, walls):
+        self.seed = info["map"]["seed"]
+        self.grid = bytes(value for row in info["map"]["grid"] for value in row)
+        self.walls = walls
+        self.map = None
+
+    def __call__(self, obs, action):
+        me, enemy = obs["self"], obs["enemy"]
+        shells = []
+        threatened = False
+        shell_travel = EVADE_TICKS * rules.SHELL_SPEED * rules.DT
+        tank_travel = EVADE_TICKS * rules.SPEED * rules.DT
+        for n, shell in enumerate(obs["shells"], start=1):
+            if shell["mine"]:
+                continue
+            x, y, vx, vy = (shell[k] for k in ("x", "y", "dx", "dy"))
+            if hypot(x - me["x"], y - me["y"]) > shell_travel + tank_travel + rules.HIT_RADIUS:
+                continue
+            impact = ray_circle(x, y, vx, vy, me["x"], me["y"], rules.HIT_RADIUS)
+            if impact <= shell_travel and ray_wall(self.walls, x, y, vx, vy, shell_travel) >= impact:
+                threatened = True
+            shells.append(Shell(n, 1, x, y, vx, vy))
+        if not threatened:
+            return action
+
+        tanks = [Tank(i, obs["x"], obs["y"], obs["heading"], alive=obs["alive"])
+                 for i, obs in enumerate((me, enemy))]
+        if self.map is None:
+            spawns = tuple(Spawn(t.x, t.y, t.h) for t in tanks)
+            self.map = GameMap(self.seed, self.grid, sum(self.grid) / len(self.grid), -1, spawns)
+
+        def safe(candidate):
+            game = Game(self.map, tanks=[replace(t) for t in tanks], shells=[replace(sh) for sh in shells])
+            for _ in range(EVADE_TICKS):
+                game.step([candidate, STILL])
+            return game.tanks[0].hp == rules.HP
+
+        current = action | {"fire": False}
+        if safe(current):
+            return action
+        speed, turn = action["forward"], action["turn"]
+        alternatives = [(v, t) for v in (-1., 1.) for t in dict.fromkeys((turn, -1., 0., 1.))
+                        if (v, t) != (speed, turn)]
+        for v, t in sorted(alternatives, key=lambda a: (a[1] - turn)**2 + (a[0] - speed)**2):
+            candidate = {"forward": v, "turn": t, "fire": False}
+            if safe(candidate):
+                return candidate | {"fire": action["fire"] and t == turn}
+        return action
+
+
 class BossSparring(Bot):
     def __init__(self):
         with np.load(Path(__file__).with_name("weights.npz"), allow_pickle=False) as weights:
             self.weights = dict(weights)
 
     def on_match_start(self, info):
-        self.features = Features(info)
+        extractor = ManeuverFeatures if "turn_centers" in self.weights else Features
+        self.features = extractor(info)
+        self.evade = EvadeIncoming(info, self.features.walls) if "evade_incoming" in self.weights else None
 
     def decide(self, obs):
         features = self.features(obs)
         forward, turn, fire = decode(features, predict(features, self.weights), self.weights)
-        return {"forward": float(forward), "turn": float(-turn if self.features.flip else turn),
-                "fire": bool(fire)}
+        action = {"forward": float(forward), "turn": float(-turn if self.features.flip else turn),
+                  "fire": bool(fire)}
+        return self.evade(obs, action) if self.evade else action
