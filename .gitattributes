@@ -2,7 +2,9 @@
 *.sh text eol=lf
 *.json text eol=lf
 *.md text eol=lf
-published/versions/**/files/** -text
+published/versions/**/files/** -text -whitespace
+strategies/boss-specialist/** -text whitespace=cr-at-eol
+strategies/boss-specialist/stock/** -text -whitespace
 *.gz -text
 published/runtimes/*.zip -text
 *.bin -text

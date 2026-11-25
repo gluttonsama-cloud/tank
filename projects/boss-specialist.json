@@ -1,0 +1,7 @@
+{
+  "name": "终极人机专项",
+  "kind": "rl",
+  "purpose": "pve",
+  "sources": ["boss-specialist"],
+  "training": ["fit_boss_specialist.py"]
+}
