@@ -1,5 +1,4 @@
 import json
-import os
 import sqlite3
 import threading
 import time
@@ -12,7 +11,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from seedcup.client.viewer import TYPES, WEB, static_file
 
-from . import evaluation, publication, sync, versions
+from . import evaluation, online, publication, sync, versions
 from .cli import execute, list_runs, parser
 from .eval_plan import list_suites
 from .workspace import read_json
@@ -57,7 +56,7 @@ class WorkbenchHTTP(ThreadingHTTPServer):
             self.stop_sync.wait(interval)
 
     def refresh_scores(self):
-        if not (os.environ.get("SEEDCUP_USERNAME") and os.environ.get("SEEDCUP_PASSWORD")):
+        if not online.account(self.root):
             return
         with self.guard:
             if self.sync_running or time.monotonic() < self.next_sync:
@@ -110,7 +109,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._reply({"application": "tank", "root": str(root.resolve())})
             if url.path == "/api/overview":
                 self.server.refresh_scores()
-                return self._reply(overview(root) | {"team_sync": dict(self.server.team_sync),
+                return self._reply(overview(root) | {"account_username": (online.account(root) or {}).get("username"), "team_sync": dict(self.server.team_sync),
                                                      "sync_error": self.server.sync_error,
                                                      "score_sync_running": self.server.sync_running})
             if url.path == "/replay":
@@ -142,13 +141,16 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self._local():
             return
-        if self.path != "/api/command" or self.headers.get_content_type() != "application/json":
+        if self.path not in ("/api/command", "/api/account") or self.headers.get_content_type() != "application/json":
             return self._reply({"error":"请求格式错误"}, status=400)
         try:
             size = int(self.headers["Content-Length"])
             if not 0 < size < 65536:
                 raise ValueError("请求大小超出范围")
-            argv = json.loads(self.rfile.read(size))["args"]
+            payload = json.loads(self.rfile.read(size))
+            if self.path == "/api/account":
+                return self._reply(online.save_account(self.server.root, payload["username"], payload["password"]))
+            argv = payload["args"]
             if not isinstance(argv, list) or not argv or not all(isinstance(v,str) for v in argv):
                 raise ValueError("args 须为命令参数列表")
             if argv[0] in ("check", "web", "lan", "screen") or argv[:2] in (["eval","import"], ["eval","export"]):

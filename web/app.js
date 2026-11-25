@@ -427,6 +427,7 @@ async function loadOverview(forceMain = false, page = null) {
     renderTeamScore();
     renderProjects();
     renderTraining();
+    $("account-label").textContent = overview.account_username ? `比赛账号 · ${overview.account_username}` : "填写比赛账号";
     renderOnlineVersions();
     renderTestSetup(forceMain);
     const runs = [...state.overview.runs];
@@ -797,3 +798,18 @@ $("online-status-form").addEventListener("submit", (event) => {
 
 window.addEventListener("hashchange", () => applyPage());
 loadOverview().then(() => applyPage(true)).catch((error) => showNotice(error.message, true));
+
+
+$("account-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    void withButton(event.submitter, async () => {
+        const data = await request("/api/account", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: $("account-name").value, password: $("account-password").value }),
+        });
+        $("account-password").value = "";
+        $("account-settings").open = false;
+        $("account-label").textContent = `比赛账号 · ${data.username}`;
+        showNotice("比赛账号已保存");
+    });
+});

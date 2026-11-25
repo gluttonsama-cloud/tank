@@ -48,6 +48,14 @@
 
             <details id="official-operations" class="panel utility-panel">
                 <summary class="utility-toggle">官网操作</summary>
+                <details id="account-settings">
+                    <summary id="account-label">比赛账号</summary>
+                    <form id="account-form" class="form-row">
+                        <label>账号<input id="account-name" autocomplete="username" required></label>
+                        <label>密码<input id="account-password" type="password" autocomplete="current-password" required></label>
+                        <button type="submit">验证并保存</button>
+                    </form>
+                </details>
                 <div class="form-row">
                     <label>策略或模型<select id="online-project"></select></label>
                     <label>版本<select id="online-version"></select></label>

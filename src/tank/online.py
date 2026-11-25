@@ -57,6 +57,30 @@ class _NoRedirect(HTTPRedirectHandler):
         return None
 
 
+def account_path(root):
+    return root / ".local/online/account.json"
+
+
+def account(root):
+    path = account_path(root)
+    if path.is_file():
+        return read_json(path)
+    username = os.environ.get("SEEDCUP_USERNAME")
+    password = os.environ.get("SEEDCUP_PASSWORD")
+    if username and password:
+        return {"username": username, "password": password}
+    return None
+
+
+def save_account(root, username, password):
+    if not isinstance(username, str) or not username.strip() or not isinstance(password, str) or not password:
+        raise OnlineError("请填写账号和密码")
+    credentials = {"username": username.strip(), "password": password}
+    OnlineClient(**credentials)
+    write_json(account_path(root), credentials)
+    return {"username": credentials["username"]}
+
+
 class OnlineClient:
     def __init__(self, username: str, password: str):
         self.username = username
@@ -70,12 +94,11 @@ class OnlineClient:
             raise OnlineError("请使用参赛队伍账号登录")
 
     @classmethod
-    def login(cls):
-        names = ("SEEDCUP_USERNAME", "SEEDCUP_PASSWORD")
-        for name in names:
-            if not os.environ.get(name):
-                raise OnlineError(f"请在本机设置 {name}")
-        return cls(*(os.environ[name] for name in names))
+    def login(cls, root):
+        credentials = account(root)
+        if not credentials:
+            raise OnlineError("请在「策略 → 官网操作 → 比赛账号」填写账号")
+        return cls(**credentials)
 
     def request(self, method: str, path: str, *, fields=None, body=None, content_type=None):
         headers = {"Accept": "application/json"}
@@ -307,7 +330,7 @@ def submit(root: Path, version_id: str, *, version=None, note="", client=None) -
         raise OnlineError("官网版本标签需为 1 至 40 个可见字符")
     if len(note) > 2000:
         raise OnlineError("作品说明不能超过 2000 字")
-    client = client if client is not None else OnlineClient.login()
+    client = client if client is not None else OnlineClient.login(root)
     state = client.request("GET", SUBMISSIONS)
     existing = _matching(state, version, digest)
     if existing is not None:
@@ -336,7 +359,7 @@ def submit(root: Path, version_id: str, *, version=None, note="", client=None) -
 
 
 def status(root: Path, submission_id: int, *, client=None) -> dict:
-    client = client if client is not None else OnlineClient.login()
+    client = client if client is not None else OnlineClient.login(root)
     state = client.request("GET", SUBMISSIONS)
     item = next((row for row in state["submissions"] if row["id"] == submission_id), None)
     if item is None:
@@ -429,7 +452,7 @@ def _associated_version(root, client, item, archives):
 
 def refresh(root: Path, *, client=None) -> dict:
     """Refresh the team's current official scores using one submission listing request."""
-    client = client if client is not None else OnlineClient.login()
+    client = client if client is not None else OnlineClient.login(root)
     listing = client.request("GET", SUBMISSIONS)
     rows = []
     archives = {}
@@ -458,7 +481,7 @@ def refresh(root: Path, *, client=None) -> dict:
 
 
 def matches(root: Path, *, client=None) -> list[dict]:
-    client = client if client is not None else OnlineClient.login()
+    client = client if client is not None else OnlineClient.login(root)
     result = client.request("GET", "/api/team/matches")
     return [
         item | {"replay_url": f"{SITE}/replay/{item['id']}" if item["status"] == "finished" else None}
@@ -554,7 +577,7 @@ def practice(root: Path, version_id: str, *, client=None, games=1, seed=None, le
     if seed is not None and (type(seed) is not int or not 0 <= seed < 2**31):
         raise OnlineError("地图种子需为 0 到 2147483647 的整数")
     versions.verify(root, version_id)
-    client = client if client is not None else OnlineClient.login()
+    client = client if client is not None else OnlineClient.login(root)
     try:
         return asyncio.run(_practice(root, version_id, client, games, seed, level))
     except TimeoutError:
