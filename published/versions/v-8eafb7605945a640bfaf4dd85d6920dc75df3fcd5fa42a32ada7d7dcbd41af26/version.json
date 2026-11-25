@@ -1,0 +1,15 @@
+{
+  "id": "v-8eafb7605945a640bfaf4dd85d6920dc75df3fcd5fa42a32ada7d7dcbd41af26",
+  "name": "训练 fit_boss_sparring",
+  "note": "第 36 步",
+  "files": {
+    "boss_sparring_policy.py": "4e7e5fd264fbec0e93a461b3ecce07ce43cf84d44be8cb4646bf33a0eab51f39",
+    "bot.py": "c893e1f472b1e86383826e9cd9e61c736425c4fb0ddbdd1d2e7f05385f3cccb7",
+    "submission.json": "e099604ecd9e79115246f228d74b952e68059451f514bc49658f6b5e69fcebbf",
+    "training.json": "f8d4f82beb499299a35d7d1acc92ea5ce012f776b70ca2fdfedc6a9e11e9b860",
+    "weights.npz": "e0aed128042878afaecfc1d51452a504c5d6d9a51c394da0d328f2bc8127dc35"
+  },
+  "display_time": "2026-11-25 17:54:17",
+  "runtime": "python",
+  "entrypoint": "bot.py:MovementSparring"
+}

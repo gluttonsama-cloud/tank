@@ -1,0 +1,12 @@
+{
+  "id": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+  "name": "basic-specialist",
+  "note": "基础人机：预测移动和转向，缩短弹道，近身装填完成时优先瞄准",
+  "files": {
+    "bot.py": "8855a5f46cbac6cc2d8c58d559414640eaed640b6580ffab1758cb8ba209ab61",
+    "submission.json": "e5c3dcf3a5c9f035bf1309a6678febf0b8e84c5df100d7fd827160e41a2302a3"
+  },
+  "display_time": "2026-11-25 13:47:03",
+  "runtime": "python",
+  "entrypoint": "bot.py:Lancer"
+}
