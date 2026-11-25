@@ -83,6 +83,12 @@ def test_warm_file_must_match_the_frozen_hash(tmp_path):
         fit.load_warm_params(tmp_path, record | {"sha256": "modified"})
 
 
+def test_v4_warm_start_preserves_old_actions(tmp_path):
+    params = [.5] * len(fit.V4_PARAM_NAMES)
+    record = _warm_input(tmp_path, {"param_names": fit.V4_PARAM_NAMES, "params": params})
+    assert fit.load_warm_params(tmp_path, record) == (*params, 0, 0)
+
+
 def _scored_games(tasks):
     for name, _, seed, side in tasks:
         opponent = dict.fromkeys(fit.SCORE_FIELDS, 0)

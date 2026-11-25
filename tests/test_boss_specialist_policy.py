@@ -56,6 +56,23 @@ def test_zero_policy_preserves_the_original_class_and_actions():
         assert candidate.decide(obs) == baseline.decide(obs)
 
 
+def test_chases_after_observed_shots_and_stops_after_hit():
+    game = arena()
+    bot = start(game, close_after_misses=1)
+    obs = game.observe(0)
+    for frame in range(1, 47):
+        obs["frame"] = frame
+        obs["self"]["reload"] = (15 - (frame - 1) % 15) / 10
+        obs["enemy"]["hp"] -= rules.ZONE_PER_TICK
+        action = bot.decide(obs)
+        if frame < 31:
+            assert action["forward"] == 0
+    assert action["forward"] == 1
+    obs["frame"] += 1
+    obs["enemy"]["hp"] -= rules.DAMAGE
+    assert bot.decide(obs)["forward"] == 0
+
+
 @pytest.mark.parametrize("value", [1.1, float("nan")])
 def test_parameters_are_validated_at_the_policy_boundary(value):
     with pytest.raises(ValueError, match="lead"):
