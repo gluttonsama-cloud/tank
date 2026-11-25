@@ -354,7 +354,8 @@ def _local_results(root, project_records, attached, version_records):
 
 def _raw_submission(path):
     data = read_json(path)
-    status = data["evaluation"]["status"]
+    evaluation = data.get("evaluation")
+    status = evaluation["status"] if evaluation else "awaiting_evaluation"
     return {
         "id": data["id"], "version": data["version"], "version_id": data["version_id"],
         "team_id": data["team_id"], "created_at": data["created_at"], "sha256": data["sha256"],

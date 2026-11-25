@@ -9,7 +9,7 @@ from zipfile import ZipFile
 
 import pytest
 
-from tank import online, versions
+from tank import catalog, online, versions
 from tank.cli import execute, parser
 from tank.webapp import WorkbenchHTTP
 from tank.workspace import read_json, write_json
@@ -105,6 +105,32 @@ def test_submit_timeout_reconciles_same_zip_without_second_post(tmp_path, monkey
     saved = json.loads((tmp_path / ".local/online/submissions/8-5.json").read_text(encoding="utf-8"))
     assert saved["version_id"] == "test-key"
     assert saved["sha256"] == digest
+
+
+@pytest.mark.parametrize("archived", [False, True])
+def test_submit_before_evaluation_is_visible(tmp_path, monkeypatch, archived):
+    archive = tmp_path / "submission.zip"
+    archive.write_bytes(b"archive")
+    digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+    package = {"version_id": "snapshot", "path": str(archive), "sha256": digest}
+    monkeypatch.setattr(online, "pack", lambda root, key: package)
+    record = {"id": 5, "version": "custom", "sha256": digest, "created_at": 42}
+    completed = record | {"evaluation": {"status": "completed", "score": 123}}
+    version_id = _snapshot(tmp_path, BOT)
+    assert online._submission_label(tmp_path, version_id) == "demo v1"
+    record["version"] = completed["version"] = "tank-old" if archived else "demo v1"
+    listing = _listing(*([record] if archived else [])) | {"rank_submission_enabled": True}
+    client = _MockClient([listing, *([] if archived else [{"submission": record}]), {},
+                          _listing(record), _listing(record), _listing(completed)])
+
+    result = online.submit(tmp_path, version_id, client=client)
+    assert result["id"] == 5
+    path = tmp_path / ".local/online/submissions/8-5.json"
+    assert catalog._raw_submission(path)["status"] == "awaiting_evaluation"
+    assert online.status(tmp_path, 5, client=client)["evaluation"] is None
+    assert online.status(tmp_path, 5, client=client)["evaluation"]["score"] == 123
+    posts = [path for method, path, _ in client.requests if method == "POST"]
+    assert posts == ([] if archived else [online.SUBMISSIONS]) + [online.SUBMISSIONS + "/5/evaluate"]
 
 
 def test_submit_checks_version_conflict_after_timeout(tmp_path, monkeypatch):
