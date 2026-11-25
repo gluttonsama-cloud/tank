@@ -297,8 +297,6 @@ def _matching(state: dict, version: str, digest: str):
 
 
 def _store(root: Path, client: OnlineClient, submission: dict, package: dict) -> dict:
-    if not submission["evaluation"]:
-        raise OnlineError("官网记录没有计榜评测状态")
     record = {
         **submission, "version_id": package["version_id"], "package": package["path"],
         "team_id": client.user["id"], "operator": getpass.getuser(),
@@ -323,13 +321,37 @@ def _multipart(fields: dict, payload: bytes) -> tuple[bytes, str]:
     return b"".join(parts), f"multipart/form-data; boundary={boundary}"
 
 
+def _submission_label(root, version_id):
+    from .catalog import project_labels
+
+    project = project_labels(root, [version_id])[version_id][0]
+    suffix = f" v{project['number']}"
+    return project["name"][:40 - len(suffix)] + suffix
+
+
+def _submit_evaluation(root, client, item, package, state):
+    record = _store(root, client, item, package)
+    if item.get("evaluation") or not state.get("rank_submission_enabled"):
+        return record
+    submission_id = item["id"]
+    try:
+        client.request("POST", f"{SUBMISSIONS}/{submission_id}/evaluate")
+    except (RequestUncertain, RemoteError) as error:
+        current = status(root, submission_id, client=client)
+        if current.get("evaluation"):
+            return current
+        raise OnlineError(f"版本已归档（#{submission_id}），评测入队未确认：{error}。可再次提交此版本。") from error
+    return status(root, submission_id, client=client)
+
+
 def submit(root: Path, version_id: str, *, version=None, note="", client=None) -> dict:
     package = pack(root, version_id)
     payload = Path(package["path"]).read_bytes()
     digest = package["sha256"]
     if hashlib.sha256(payload).hexdigest() != digest:
         raise OnlineError("上传 ZIP 与预检摘要不一致")
-    version = version.strip() if version is not None else "tank-" + digest[:32]
+    default_label = version is None
+    version = _submission_label(root, version_id) if default_label else version.strip()
     note = note.strip()
     if not 1 <= len(version) <= 40 or any(ord(char) < 32 for char in version):
         raise OnlineError("官网版本标签需为 1 至 40 个可见字符")
@@ -337,9 +359,14 @@ def submit(root: Path, version_id: str, *, version=None, note="", client=None) -
         raise OnlineError("作品说明不能超过 2000 字")
     client = client if client is not None else OnlineClient.login(root)
     state = client.request("GET", SUBMISSIONS)
-    existing = _matching(state, version, digest)
+    if default_label:
+        existing = next((row for row in state["submissions"] if row["sha256"] == digest), None)
+    else:
+        existing = None
+    if existing is None:
+        existing = _matching(state, version, digest)
     if existing is not None:
-        return _store(root, client, existing, package)
+        return _submit_evaluation(root, client, existing, package, state)
     if not state["window"]["automatic_evaluation"]:
         raise OnlineError("官网当前未启用计榜评测")
     body, content_type = _multipart({"version": version, "entrypoint": "", "note": note}, payload)
@@ -352,14 +379,14 @@ def submit(root: Path, version_id: str, *, version=None, note="", client=None) -
             state = client.request("GET", SUBMISSIONS)
             existing = _matching(state, version, digest)
             if existing is not None:
-                return _store(root, client, existing, package)
+                return _submit_evaluation(root, client, existing, package, state)
             if attempt or isinstance(error, RemoteError) or not state["window"]["automatic_evaluation"]:
                 raise
         else:
             item = _matching({"submissions": [response["submission"]]}, version, digest)
             if item is None:
                 raise OnlineError("官网返回的提交版本标签与请求不一致")
-            return _store(root, client, item, package)
+            return _submit_evaluation(root, client, item, package, state)
     raise AssertionError("upload attempts exhausted")
 
 
@@ -374,7 +401,7 @@ def status(root: Path, submission_id: int, *, client=None) -> dict:
         old = read_json(path)
         if item["sha256"] != old["sha256"] or item["version"] != old["version"]:
             raise OnlineError(f"提交记录 {submission_id} 与本地摘要不一致")
-        item = old | item
+        item = old | item | {"evaluation": item.get("evaluation")}
         write_json(path, item)
     return item
 

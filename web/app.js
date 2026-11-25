@@ -9,6 +9,8 @@ const state = {
     run: null,
     poll: null,
     strategyPoll: null,
+    officialPoll: null,
+    officialRequest: 0,
     strategyRequest: 0,
     practiceHistoryRequest: 0,
     projectsView: "",
@@ -20,7 +22,7 @@ const state = {
     starting: false,
 };
 const statuses = {
-    queued: "排队中", pending: "等待测试", running: "测试中", cancelling: "正在取消",
+    awaiting_evaluation: "等待官网评测状态", queued: "排队中", pending: "等待测试", running: "测试中", cancelling: "正在取消",
     cancelled: "已取消", completed: "已完成", incomplete: "未完成", failed: "失败",
 };
 const trainingStatuses = { queued: "排队中", running: "训练中", completed: "已完成", failed: "失败", interrupted: "已中断" };
@@ -741,6 +743,8 @@ async function refreshPracticeHistory() {
 }
 
 function showOnline(op, data) {
+    clearTimeout(state.officialPoll);
+    const requestId = ++state.officialRequest;
     const output = $("online-output");
     output.replaceChildren();
     if (op === "pack") output.append(element("p", `预检通过 · ${number.format(data.bytes)} 字节`), element("p", data.path));
@@ -775,11 +779,24 @@ function showOnline(op, data) {
     if (op === "submit" || op === "status") {
         $("submission-id").value = data.id;
         const evaluation = data.evaluation;
-        const headline = evaluation ? `提交 ${data.id} · ${statuses[evaluation.status] || evaluation.status}` : `提交 ${data.id}`;
+        const status = evaluation?.status ?? "awaiting_evaluation";
+        const headline = `提交 ${data.id} · ${statuses[status] || status}`;
         output.append(element("p", headline));
         if (evaluation?.score != null) output.append(element("p", `总分 ${score.format(evaluation.score)}`));
         if (evaluation?.breakdown) output.append(element("p", componentsText(evaluation.breakdown)));
         if (evaluation?.error) output.append(element("p", evaluation.error, "failure"));
+        if (["awaiting_evaluation", "queued", "running"].includes(status)) {
+            state.officialPoll = setTimeout(async () => {
+                try {
+                    const updated = await command("online", "status", String(data.id));
+                    if (requestId === state.officialRequest) showOnline("status", updated);
+                } catch (error) {
+                    if (requestId === state.officialRequest) {
+                        output.append(element("p", `查询中断：${error.message}。可在「查官网成绩」重试。`, "failure"));
+                    }
+                }
+            }, 5000);
+        }
     }
     output.hidden = false;
 }
