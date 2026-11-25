@@ -19,10 +19,11 @@ from seedcup import Bot
 from seedcup.game import rules
 from seedcup.game.bots import clear_shot, ray_wall, wall_grid
 
-PARAM_NAMES = (
+V4_PARAM_NAMES = (
     "lead", "curvature", "aim", "trigger", "range_target", "approach",
     "spacing", "orbit", "dodge", "wall", "zone", "repair",
 )
+PARAM_NAMES = (*V4_PARAM_NAMES, "close_after_misses", "cross_lead")
 DEFAULT_PARAMS = (0.0,) * len(PARAM_NAMES)
 
 
@@ -351,7 +352,8 @@ def make_policy(
     if weights == DEFAULT_PARAMS:
         return base_class
 
-    lead, curvature, aim, trigger, range_target, approach, spacing, orbit, dodge, wall, zone_bias, repair = weights
+    lead, curvature, aim, trigger, range_target, approach, spacing, orbit, dodge, wall, zone_bias, repair = weights[:12]
+    close, cross_lead = weights[12:]
     target_range = 6.5 + 5 * range_target
     aim_weight = max(abs(aim), .55 * abs(lead), .4 * abs(curvature))
 
@@ -361,6 +363,9 @@ def make_policy(
             self._residual_arena = Arena(info, route_home=zone_bias > 0)
             self._residual_previous = None
             self._residual_velocity = (0.0, 0.0)
+            self._last_reload = 0.0
+            self._enemy_hp = rules.HP
+            self._unanswered_shots = 0
 
         def decide(self, obs):
             action = super().decide(obs)
@@ -386,6 +391,13 @@ def make_policy(
             zone = obs["zone"]
             margin = zone["radius"] - hypot(x - zone["x"], y - zone["y"])
             approach_zone = clamp((2.5 - margin) / 2.5, 0, 1)
+            if close:
+                if me["reload"] > self._last_reload:
+                    self._unanswered_shots += 1
+                # A shell removes 10 HP; the circle alone removes 0.6 HP per tick.
+                if self._enemy_hp - enemy["hp"] > max(rules.DAMAGE * .8, rules.ZONE_PER_TICK * age + .1):
+                    self._unanswered_shots = 0
+                self._last_reload, self._enemy_hp = me["reload"], enemy["hp"]
 
             if visible and (approach or spacing or orbit):
                 radial = distance - target_range
@@ -399,12 +411,28 @@ def make_policy(
                 turn = blend(turn, movement_turn, weight)
                 forward = blend(forward, movement_speed, weight)
 
+            if visible and close and self._unanswered_shots >= 3 and distance > 2.3:
+                # Close while the opponent has room to evade. Keep aiming independently.
+                strength = (abs(close) * clamp((self._unanswered_shots - 2) / 2, 0, 1)
+                            * clamp((distance - 2.3) / 2, 0, 1) * (1 - approach_zone))
+                flank = 24 * clamp((distance - 3) / 4, 0, 1) if close < 0 else 0
+                chase_turn, chase_speed = steer(bearing(ex - x, ey - y) + arena.handedness * flank, heading)
+                turn = blend(turn, chase_turn, strength * (1 - near_ready))
+                forward = blend(forward, chase_speed, strength)
+
             chosen_aim = target
             if visible and (trigger or aim_weight) and near_ready > 0:
                 step_turn = angle_delta(enemy_heading, past_heading) / age
                 ticks = flight_ticks(distance)
                 proposed = predictor(obs, dx, dy, ticks) if predictor is not None else None
                 chosen_aim = forecast(arena, own, target, velocity, step_turn, ticks, lead, curvature, proposed)
+                if cross_lead and distance > 0:
+                    # Shift across the current line of sight; a head-on target needs no correction.
+                    ux, uy = (ex - x) / distance, (ey - y) / distance
+                    offset = (uy * velocity[0] - ux * velocity[1]) * cross_lead * 2
+                    ax, ay = chosen_aim[0] + uy * offset, chosen_aim[1] - ux * offset
+                    if arena.free(ax, ay) and arena.aim_clear(x, y, ax, ay):
+                        chosen_aim = ax, ay
                 # Movement and rotation both precede firing in the game tick.
                 next_x, next_y = arena.move(x, y, *motion(heading, turn, forward), target)
                 ideal = angle_delta(bearing(chosen_aim[0] - next_x, chosen_aim[1] - next_y), heading)

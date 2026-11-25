@@ -34,6 +34,7 @@ if __package__:
     from .boss_specialist_policy import (
         DEFAULT_PARAMS,
         PARAM_NAMES,
+        V4_PARAM_NAMES,
         load_strategy,
         make_policy,
     )
@@ -41,6 +42,7 @@ else:
     from boss_specialist_policy import (
         DEFAULT_PARAMS,
         PARAM_NAMES,
+        V4_PARAM_NAMES,
         load_strategy,
         make_policy,
     )
@@ -160,15 +162,16 @@ def load_warm_params(folder, source):
     if sha256(content).hexdigest() != source["sha256"]:
         raise ValueError("weights.json 的 SHA-256 与冻结输入记录不一致")
     record = json.loads(content)
-    if not isinstance(record, dict) or record.get("param_names") != list(PARAM_NAMES):
+    if not isinstance(record, dict) or record.get("param_names") not in (list(PARAM_NAMES), list(V4_PARAM_NAMES)):
         raise ValueError("weights.json 的 param_names 必须与当前策略一致")
     params = record.get("params")
-    if not isinstance(params, list) or len(params) != len(PARAM_NAMES):
-        raise ValueError(f"weights.json 的 params 必须包含 {len(PARAM_NAMES)} 项")
-    for name, value in zip(PARAM_NAMES, params, strict=True):
+    names = record["param_names"]
+    if not isinstance(params, list) or len(params) != len(names):
+        raise ValueError(f"weights.json 的 params 必须包含 {len(names)} 项")
+    for name, value in zip(names, params, strict=True):
         if type(value) not in (int, float) or not -1 <= value <= 1 or not isfinite(value):
             raise ValueError(f"weights.json 的参数 {name} 必须为 [-1, 1] 内的有限数值")
-    return tuple(float(value) for value in params)
+    return tuple(float(value) for value in params) + DEFAULT_PARAMS[len(names):]
 
 
 def load_predictor(path):
@@ -230,7 +233,7 @@ def run_worker(folder):
 
 
 @contextmanager
-def worker_pool(folder, count):
+def worker_pool(folder, count, script=None):
     children = SimpleQueue()
     processes = []
     thread = threading.local()
@@ -254,7 +257,7 @@ def worker_pool(folder, count):
     try:
         for _ in range(count):
             process = subprocess.Popen(
-                [sys.executable, "-B", "-u", str(Path(__file__).resolve()), "--worker", str(folder)],
+                [sys.executable, "-B", "-u", str(script or Path(__file__).resolve()), "--worker", str(folder)],
                 cwd=folder, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 text=True, encoding="utf-8", creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )

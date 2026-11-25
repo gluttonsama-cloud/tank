@@ -3,5 +3,5 @@
   "kind": "rl",
   "purpose": "pve",
   "sources": ["boss-specialist"],
-  "training": ["fit_boss_specialist.py"]
+  "training": ["fit_boss_specialist.py", "fit_boss_local.py"]
 }

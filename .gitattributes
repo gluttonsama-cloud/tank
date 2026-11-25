@@ -5,6 +5,8 @@
 published/versions/**/files/** -text -whitespace
 strategies/boss-specialist/** -text whitespace=cr-at-eol
 strategies/boss-specialist/stock/** -text -whitespace
+strategies/boss-specialist/base/** -text -whitespace
+strategies/boss-specialist/replica/** -text -whitespace
 *.gz -text
 published/runtimes/*.zip -text
 *.bin -text
