@@ -475,7 +475,10 @@ async def _receive(ws, timeout=20) -> dict:
     return message
 
 
-async def _room_matches(root, source, version_id, ws, games):
+PRACTICE_LEVELS = ("rookie", "mid", "strong", "boss")
+
+
+async def _room_matches(root, source, version_id, ws, games, level, seed):
     completed = []
     bot = None
     match_id = None
@@ -486,6 +489,7 @@ async def _room_matches(root, source, version_id, ws, games):
             if kind == "match_start" and message["kind"] == "room":
                 bot = ProcessBot(root, source, version_id, match_seconds=None)
                 match_id = message["match_id"]
+                side = message["side"]
                 await asyncio.to_thread(bot.on_match_start, message)
             elif match_id is not None and message.get("match_id") == match_id:
                 if kind == "obs":
@@ -497,8 +501,12 @@ async def _room_matches(root, source, version_id, ws, games):
                                               "frame": message["frame"], **action}))
                 elif kind == "match_end":
                     await asyncio.to_thread(bot.on_match_end, message["result"])
-                    completed.append({"id": match_id, "result": message["result"],
-                                      "replay_url": f"{SITE}/replay/{match_id}"})
+                    record = {"id": match_id, "result": message["result"], "side": side,
+                              "score": message["result"]["scores"][("red", "blue").index(side)]["total"],
+                              "level": level, "version_id": version_id, "seed": seed,
+                              "replay_url": f"{SITE}/replay/{match_id}"}
+                    write_json(root / ".local/online/practice" / version_id / level / f"{match_id}.json", record)
+                    completed.append(record)
                     bot = match_id = None
                 elif kind == "match_abort":
                     raise OnlineError(message["reason"])
@@ -508,7 +516,7 @@ async def _room_matches(root, source, version_id, ws, games):
     return completed
 
 
-async def _practice(root, version_id, client, games, seed):
+async def _practice(root, version_id, client, games, seed, level):
     source = versions.snapshot_data(root, version_id)
     async with websockets.connect(SOCKET, open_timeout=10, max_size=2**20) as ws:
         await ws.send(json.dumps({"type": "login", "username": client.username,
@@ -517,7 +525,7 @@ async def _practice(root, version_id, client, games, seed):
         if welcome["type"] != "welcome" or welcome["team"]["id"] != client.user["id"]:
             raise OnlineError("在线练习连接的账号与选手中心不一致")
         room = await asyncio.to_thread(client.request, "POST", ROOMS, fields={
-            "opponent": "baseline", "level": "rookie", "games": games, "seed": seed, "public": True,
+            "opponent": "baseline", "level": level, "games": games, "seed": seed, "public": True,
         })
         code = room["code"]
         if not re.fullmatch(r"[A-Z0-9]{6}", code):
@@ -526,19 +534,21 @@ async def _practice(root, version_id, client, games, seed):
         try:
             await asyncio.to_thread(client.request, "POST", f"{ROOMS}/{code}/start")
             async with asyncio.timeout(games * 100 + 20):
-                completed = await _room_matches(root, source, version_id, ws, games)
+                completed = await _room_matches(root, source, version_id, ws, games, level, seed)
         finally:
             try:
                 await asyncio.to_thread(client.request, "POST", f"{ROOMS}/{code}/close")
             except OnlineError as error:
                 close_error = str(error)
-        result = {"room": code, "version_id": version_id, "matches": completed}
+        result = {"room": code, "level": level, "version_id": version_id, "matches": completed}
         if close_error is not None:
             result["close_error"] = close_error
         return result
 
 
-def practice(root: Path, version_id: str, *, client=None, games=1, seed=None) -> dict:
+def practice(root: Path, version_id: str, *, client=None, games=1, seed=None, level="rookie") -> dict:
+    if level not in PRACTICE_LEVELS:
+        raise OnlineError(f"未知练习档位 {level}")
     if type(games) is not int or games not in (1, 2):
         raise OnlineError("在线练习支持 1 局或 2 局")
     if seed is not None and (type(seed) is not int or not 0 <= seed < 2**31):
@@ -546,7 +556,7 @@ def practice(root: Path, version_id: str, *, client=None, games=1, seed=None) ->
     versions.verify(root, version_id)
     client = client if client is not None else OnlineClient.login()
     try:
-        return asyncio.run(_practice(root, version_id, client, games, seed))
+        return asyncio.run(_practice(root, version_id, client, games, seed, level))
     except TimeoutError:
         raise OnlineError("在线练习超时") from None
     except websockets.exceptions.WebSocketException:

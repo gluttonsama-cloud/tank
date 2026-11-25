@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
+from contextlib import closing
 from collections import defaultdict
 from pathlib import Path, PurePosixPath
 
@@ -121,11 +123,13 @@ def validate_project_labels(payload, version_ids):
             raise ValueError(f"快照 {version_id} 的项目归属必须是非空列表")
         seen = set()
         for label in labels:
-            if not isinstance(label, dict) or label.keys() != {"id", "name", "kind"}:
+            if not isinstance(label, dict) or set(label) - {"number"} != {"id", "name", "kind"}:
                 raise ValueError(f"快照 {version_id} 的项目归属需要 id、name、kind")
             for field in ("id", "name"):
                 if not _label_text(label[field]):
                     raise ValueError(f"快照 {version_id} 的项目 {field} 无效")
+            if "number" in label and (type(label["number"]) is not int or not 1 <= label["number"] < 2**53):
+                raise ValueError("共享版本号必须为正整数")
             kind = label["kind"]
             if not isinstance(kind, str) or kind not in KINDS:
                 raise ValueError(f"快照 {version_id} 的项目 kind 无效")
@@ -214,9 +218,47 @@ def _snapshots(root, projects_by_id, sources, scripts, job_projects, selected):
                 project = projects_by_id.setdefault(project_id, _project(project_id, name))
                 matches[project_id] = project
         for project in matches.values():
-            project["versions"].append(history | {"project_id": project["id"]})
+            preferred = shared.get(version_id, {}).get(project["id"], {}).get("number")
+            project["versions"].append(history | {"project_id": project["id"], "number": preferred})
             attached[version_id].append(project)
+    _number_versions(root, projects_by_id.values())
     return attached, version_records
+
+
+def _number_versions(root, projects):
+    if not any(p["versions"] for p in projects):
+        return
+    directory = root / ".local"
+    directory.mkdir(exist_ok=True)
+    with closing(sqlite3.connect(directory / "version-numbers.sqlite3", timeout=30)) as db, db:
+        db.execute("""CREATE TABLE IF NOT EXISTS project_version_numbers (
+    project TEXT NOT NULL,
+    snapshot TEXT NOT NULL,
+    number INTEGER NOT NULL,
+    PRIMARY KEY (project, snapshot),
+    UNIQUE (project, number)
+);""")
+        db.execute("BEGIN IMMEDIATE")
+        for project in projects:
+            if not project["versions"]:
+                continue
+            assigned = dict(db.execute(
+                "SELECT snapshot, number FROM project_version_numbers WHERE project=?", (project["id"],)
+            ))
+            used = set(assigned.values())
+            next_number = max(used, default=0) + 1
+            # Reserve known shared numbers before assigning numbers to older unlabelled snapshots.
+            for version in sorted(project["versions"], key=lambda v: (v["number"] is None, v["display_time"], v["id"])):
+                key = version["id"]
+                if key not in assigned:
+                    number = version["number"]
+                    if number is None or number in used:
+                        number = next_number
+                    db.execute("INSERT INTO project_version_numbers VALUES (?, ?, ?)", (project["id"], key, number))
+                    assigned[key] = number
+                    used.add(number)
+                    next_number = max(next_number, number + 1)
+                version["number"] = assigned[key]
 
 
 def _condition_id(manifest):
@@ -385,7 +427,9 @@ def project_labels(root: Path, version_ids) -> dict:
     _, attached, _ = _strategy_index(root, selected)
     payload = {
         version_id: [
-            {key: project[key] for key in ("id", "name", "kind")}
+            {key: project[key] for key in ("id", "name", "kind")} | {
+                "number": next(v["number"] for v in project["versions"] if v["id"] == version_id)
+            }
             for project in sorted(attached[version_id], key=lambda project: project["id"])
         ]
         for version_id in sorted(selected)

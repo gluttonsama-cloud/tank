@@ -49,8 +49,10 @@
             <details id="official-operations" class="panel utility-panel">
                 <summary class="utility-toggle">官网操作</summary>
                 <div class="form-row">
-                    <label>策略版本<select id="online-version"></select></label>
+                    <label>策略或模型<select id="online-project"></select></label>
+                    <label>版本<select id="online-version"></select></label>
                     <button type="button" data-online="pack" disabled>打包预检</button>
+                    <label>练习对手<select id="practice-level"><option value="rookie">入门</option><option value="mid">基础</option><option value="strong">进阶</option><option value="boss">终极</option></select></label>
                     <button type="button" data-online="practice" disabled>在线练习</button>
                     <button type="button" class="official" data-online="submit" disabled>提交评测（计入榜单）</button>
                 </div>
@@ -73,14 +75,15 @@
                         <div id="candidates" class="choices"></div>
                     </fieldset>
                     <div class="test-options">
-                        <label>比较基准<select id="baseline" required></select></label>
-                        <label>测试方案<select id="suite" required></select></label>
                         <label>对战方式
                             <select id="mode">
-                                <option value="opponent">同一陪练</option>
-                                <option value="direct">直接交手</option>
+                                <option value="opponent">对比同一陪练上的成绩</option>
+                                <option value="direct">分别挑战指定对手</option>
                             </select>
                         </label>
+                        <label><span id="baseline-label">参照项目</span><select id="baseline-project"></select></label>
+                        <label>版本<select id="baseline" required></select></label>
+                        <label>测试方案<select id="suite" required></select></label>
                         <label class="check"><input id="save-replay" type="checkbox">保存回放</label>
                     </div>
                 </div>
@@ -130,7 +133,7 @@
                     </div>
                     <div class="table-scroll">
                         <table>
-                            <thead><tr><th scope="col">候选版本</th><th scope="col">累计总分</th><th scope="col">计入局数</th><th scope="col">配对分差</th><th scope="col">配对胜率</th><th scope="col">配对</th></tr></thead>
+                            <thead><tr><th scope="col">候选版本</th><th scope="col">累计总分</th><th scope="col">计入局数</th><th scope="col" id="delta-heading">与参照版分差</th><th scope="col">候选胜率</th><th scope="col">完成换边组</th></tr></thead>
                             <tbody id="comparison"></tbody>
                         </table>
                     </div>

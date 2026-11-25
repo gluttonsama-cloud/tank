@@ -134,20 +134,24 @@ class _MockSocket:
         self.sent.append(json.loads(message))
 
 
-def test_practice_runs_room_and_closes_without_reconnect(tmp_path, monkeypatch):
+@pytest.mark.parametrize("level", online.PRACTICE_LEVELS)
+def test_practice_runs_room_and_closes_without_reconnect(tmp_path, monkeypatch, level):
     key = _snapshot(tmp_path, BOT)
     team = {"id": 8}
-    result = {"winner": 0}
+    result = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
     socket = _MockSocket([
         {"type": "welcome", "team": team},
-        {"type": "match_start", "kind": "room", "match_id": 100},
+        {"type": "match_start", "kind": "room", "match_id": 100, "side": "blue"},
         {"type": "obs", "frame": 0, "match_id": 100},
         {"type": "match_end", "match_id": 100, "result": result},
     ])
     monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: socket)
     client = _MockClient([{"code": "AB12CD"}, {"ok": True}, {"ok": True}])
 
-    progress = online.practice(tmp_path, key, client=client)
+    progress = online.practice(tmp_path, key, client=client, level=level)
+    assert client.requests[0][2]["fields"]["level"] == level
+    record = read_json(tmp_path / ".local/online/practice" / key / level / "100.json")
+    assert record["score"] == 20 and record["level"] == level
 
     assert progress["matches"][0]["result"] == result
     assert progress["matches"][0]["replay_url"].endswith("/replay/100")

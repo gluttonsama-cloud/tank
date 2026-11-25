@@ -3,6 +3,7 @@ import json
 import re
 import shutil
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .workspace import read_json, write_json
@@ -26,10 +27,19 @@ def snapshot_data(root: Path, version_id: str) -> Path:
     return _version_dir(root, version_id) / "files"
 
 
+def _time_label(seconds):
+    created = datetime.fromtimestamp(seconds, timezone(timedelta(hours=8)))
+    return created.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def describe(root: Path, version_id: str) -> dict:
     if version_id == "baseline":
         return BASELINE.copy()
-    return read_json(_version_dir(root, version_id) / "version.json")
+    path = _version_dir(root, version_id) / "version.json"
+    record = read_json(path)
+    if "display_time" not in record:
+        record["display_time"] = _time_label(path.stat().st_mtime)
+    return record
 
 
 def list_versions(root: Path) -> list:
@@ -96,6 +106,7 @@ def create_from_directory(root, source, name, note=""):
         manifest((dest / "submission.json").read_bytes(), set(files))
         key = _version_id(files)
         record = {"id": key, "name": name, "note": note, "files": files,
+                  "display_time": _time_label(staged.stat().st_mtime),
                   "runtime": spec["runtime"], "entrypoint": spec["entrypoint"]}
         write_json(staged / "version.json", record)
         try:

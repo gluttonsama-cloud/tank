@@ -118,6 +118,9 @@ legend { padding: 0; margin-bottom: 5px; font-size: 13px; font-weight: 650; }
 .choices .check { padding: 9px 10px; border-bottom: 1px solid var(--line); }
 .choices .check:last-child { border-bottom: 0; }
 .choices .check:has(:checked) { background: var(--selected); }
+.candidate-project summary { cursor: pointer; padding: 9px 10px; font-weight: 600; }
+.candidate-project + .candidate-project { border-top: 1px solid var(--line); }
+.candidate-project .check { padding-left: 26px; }
 .choices p { padding: 10px; }
 .check { display: flex; align-items: center; gap: 9px; min-height: 32px; }
 .check input { margin: 0; width: 16px; height: 16px; accent-color: var(--accent); }

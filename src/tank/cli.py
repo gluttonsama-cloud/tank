@@ -109,6 +109,8 @@ def parser():
                     cmd.add_argument("--version")
                     cmd.add_argument("--note", default="")
                 if op == "practice":
+                    from .online import PRACTICE_LEVELS
+                    cmd.add_argument("--level", choices=PRACTICE_LEVELS, default="rookie")
                     cmd.add_argument("--games", type=int, choices=(1,2), default=1)
                     cmd.add_argument("--seed", type=int)
             elif group == "training" and op == "collect":
@@ -231,7 +233,7 @@ def execute(root, args):
         if op == "submit":
             return online.submit(root, args.identifier, version=args.version, note=args.note)
         if op == "practice":
-            return online.practice(root, args.identifier, games=args.games, seed=args.seed)
+            return online.practice(root, args.identifier, games=args.games, seed=args.seed, level=args.level)
         return getattr(online, op)(root, *([] if op == "matches" else [args.identifier]))
     raise ValueError(f"未知命令 {group}")
 

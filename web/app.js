@@ -29,7 +29,7 @@ const percent = new Intl.NumberFormat("zh-CN", { style: "percent", maximumFracti
 const timestamp = new Intl.DateTimeFormat("zh-CN", { dateStyle: "short", timeStyle: "medium" });
 const scoreItems = [["kill", "击毁"], ["damage", "伤害"], ["survive", "生存"], ["time", "时间"]];
 const projectKinds = { rule: "规则", planning: "规划", rl: "强化学习", hybrid: "混合", imitation: "模仿学习", other: "其他" };
-const suitesByName = { quick: "快速测试", full: "完整测试", acceptance: "独立验收" };
+const suitesByName = { quick: "快速测试", full: "本地 40 局", acceptance: "独立验收" };
 const suiteLabel = (name) => suitesByName[name] || name;
 
 function element(tag, text, className = "") {
@@ -85,18 +85,17 @@ function selectOptions(id, entries, value = $(id).value) {
     select.disabled = entries.length === 0;
 }
 
-function versionLabel(id, project = state.overview.projects.find((item) => item.versions.some((version) => version.id === id))) {
+function versionLabel(id) {
     const version = state.overview.versions.find((item) => item.id === id);
-    if (!version) return id.slice(0, 10);
+    if (!version) return "未载入版本";
     if (id === "baseline") return version.name;
-    const name = project ? project.name : version.name;
-    return !project || project.versions.length > 1 ? `${name} · ${id.slice(2, 10)}` : name;
+    const project = state.overview.projects.find((item) => item.versions.some((entry) => entry.id === id));
+    const entry = project?.versions.find((item) => item.id === id);
+    return entry ? `${project.name} v${entry.number}` : version.name;
 }
 
 function versionText(id) {
-    const label = element("span", versionLabel(id));
-    label.title = id;
-    return label;
+    return element("span", versionLabel(id));
 }
 
 function addRow(body, cells) {
@@ -162,8 +161,7 @@ function officialRecordButton(record) {
 
 function historyVersionCell(item) {
     const label = element("div", "", "history-version");
-    const version = element("strong", item.id.slice(2, 10));
-    version.title = item.id;
+    const version = element("strong", `v${item.number}`);
     label.append(version);
     if (item.note) label.append(element("span", item.note, "history-note"));
     const actions = element("div", "", "history-actions");
@@ -265,12 +263,12 @@ function historyContents(project) {
     function render() {
         const selected = select.value;
         state.historyConditions.set(project.id, selected);
-        const rows = project.versions.map((item) => {
+        const rows = newestFirst(project).map((item) => {
             const record = item.local.by_condition.find((value) => value.condition_id === selected);
-            return { item, record, rank: completeResult(record) ? 0 : record ? 1 : 2 };
+            return { item, record };
         });
-        rows.sort((left, right) => left.rank - right.rank || (left.rank === 0 ? right.record.total_score - left.record.total_score : 0));
-        const highest = rows[0].rank === 0 ? rows[0].record.total_score : null;
+        const completed = rows.filter(({ record }) => completeResult(record));
+        const highest = completed.length ? Math.max(...completed.map(({ record }) => record.total_score)) : null;
         body.replaceChildren();
         for (const { item, record } of rows) addRow(body, [historyVersionCell(item),
             historyOfficialCell(item.official, project.official.best?.score), historyLocalCell(record, selected, highest)]);
@@ -352,42 +350,74 @@ function renderProjects() {
     }
 }
 
+function newestFirst(project) {
+    return [...project.versions].sort((a, b) => b.number - a.number);
+}
+
+function versionGroups(includeBot) {
+    const groups = state.overview.projects.filter((p) => p.versions.length);
+    if (!includeBot) return groups;
+    const bot = state.overview.versions.find((v) => v.id === "baseline");
+    return [{ id: "", name: bot.name, versions: [bot] }, ...groups];
+}
+
+function shortVersion(v) {
+    return v.id === "baseline" ? v.name : `v${v.number}${v.note ? " · " + v.note : ""}`;
+}
+
+function versionPicker(projectId, versionId, groups, preferred) {
+    const current = $(projectId).value;
+    const preferredGroup = preferred && groups.find((p) => p.versions.some((v) => v.id === preferred));
+    selectOptions(projectId, groups.map((p) => [p.id, p.name]), preferredGroup ? preferredGroup.id : current);
+    const group = groups.find((p) => p.id === $(projectId).value);
+    const entries = group ? newestFirst(group).map((v) => [v.id, shortVersion(v)]) : [];
+    selectOptions(versionId, entries, preferred || $(versionId).value);
+    $(versionId).closest("label").hidden = group?.id === "";
+}
+
 function renderOnlineVersions() {
-    const onlineVersions = state.overview.versions.filter((item) => item.id !== "baseline");
-    selectOptions("online-version", onlineVersions.map(({ id }) => [id, versionLabel(id)]));
-    for (const button of document.querySelectorAll("[data-online]")) button.disabled = !onlineVersions.length;
+    versionPicker("online-project", "online-version", versionGroups(false));
+    for (const button of document.querySelectorAll("[data-online]")) button.disabled = !$("online-version").value;
 }
 
 function selectedCandidates() {
-    return [...$("candidates").querySelectorAll("input:checked")].map((chosen) => chosen.value);
+    return [...new Set([...$("candidates").querySelectorAll("input:checked")].map((chosen) => chosen.value))];
+}
+
+function markCandidateCount(group) {
+    const count = group.querySelectorAll("input:checked").length;
+    group.querySelector("summary").textContent = group.dataset.name + (count ? ` · 已选 ${count}` : "");
 }
 
 function renderTestSetup(forceMain) {
-    const { main, versions, suites } = state.overview;
-    const allVersions = versions.map(({ id }) => [id, versionLabel(id)]);
-    selectOptions("baseline", allVersions, forceMain ? main : $("baseline").value || main);
-    selectOptions("suite", suites.map((suite) => [suite, suiteLabel(suite)]), $("suite").value || "quick");
-    const selected = selectedCandidates();
+    const groups = versionGroups(true);
+    versionPicker("baseline-project", "baseline", groups, forceMain ? state.overview.main : null);
+    selectOptions("suite", state.overview.suites.map((suite) => [suite, suiteLabel(suite)]), $("suite").value || "quick");
+    const selected = new Set(selectedCandidates());
     const choices = $("candidates");
+    const opened = new Set([...choices.querySelectorAll("details[open]")].map((g) => g.dataset.project));
     choices.replaceChildren();
-    for (const [id, label] of allVersions) {
-        if (id === $("baseline").value) continue;
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.value = id;
-        checkbox.checked = selected.includes(id);
-        const choice = element("label", "", "check");
-        choice.title = id;
-        choice.append(checkbox, label);
-        choices.append(choice);
+    for (const group of groups) {
+        const entries = newestFirst(group).filter((v) => v.id !== $("baseline").value);
+        if (!entries.length) continue;
+        const section = element("details", "", "candidate-project");
+        section.dataset.project = group.id;
+        section.dataset.name = group.name;
+        section.open = opened.has(group.id);
+        section.append(element("summary", group.name));
+        for (const v of entries) {
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = v.id;
+            checkbox.checked = selected.has(v.id);
+            const choice = element("label", "", "check");
+            choice.append(checkbox, shortVersion(v));
+            section.append(choice);
+        }
+        markCandidateCount(section);
+        choices.append(section);
     }
-    if (!choices.childElementCount) {
-        const prompt = element("p", "");
-        const link = element("a", "从策略页选择项目");
-        link.href = "#strategy";
-        prompt.append(link);
-        choices.append(prompt);
-    }
+    if (!choices.childElementCount) choices.append(element("p", "暂无可选版本"));
 }
 
 async function loadOverview(forceMain = false, page = null) {
@@ -413,10 +443,14 @@ async function loadOverview(forceMain = false, page = null) {
 function selectForTest(versionIds) {
     const baseline = $("baseline");
     if (versionIds.includes(baseline.value)) {
-        baseline.value = "baseline";
+        $("baseline-project").value = "";
         renderTestSetup(false);
     }
     for (const candidate of $("candidates").querySelectorAll("input")) candidate.checked = versionIds.includes(candidate.value);
+    for (const group of $("candidates").querySelectorAll("details")) {
+        group.open = Boolean(group.querySelector("input:checked"));
+        markCandidateCount(group);
+    }
     location.hash = "tests";
 }
 
@@ -478,6 +512,8 @@ function duration(seconds) {
 }
 
 async function estimate() {
+    const direct = $("mode").value === "direct";
+    $("baseline-label").textContent = direct ? "指定对手" : "参照项目";
     const requestId = ++state.estimateRequest;
     const summary = $("estimate");
     const start = $("start-test");
@@ -490,7 +526,10 @@ async function estimate() {
     try {
         const data = await command("eval", "estimate", ...currentTestArgs());
         if (requestId !== state.estimateRequest) return;
-        const parts = [`${data.total} 局`, `待运行 ${data.new} 局`];
+        const selected = versionLabel($("baseline").value);
+        const matchup = direct ? `各候选分别对战 ${selected}` : `各候选与 ${selected} 分别打方案中的陪练`;
+        const parts = [matchup, `共 ${data.total} 局`];
+        if (data.total > data.new) parts.push(`复用 ${data.total - data.new} 局`);
         if (data.new) parts.push(duration(data.eta_seconds));
         summary.textContent = parts.join(" · ");
         start.disabled = state.starting;
@@ -506,7 +545,13 @@ function renderRun(run) {
     $("run-count").textContent = `${run.completed} / ${run.total} 局`;
     $("run-progress").max = run.total;
     $("run-progress").value = run.completed;
-    const metadata = [`${suiteLabel(run.suite.name)} · 基准 ${versionLabel(run.baseline)}`];
+    const direct = run.mode === "direct";
+    const base = versionLabel(run.baseline);
+    const opponents = run.suite.opponents.map((id) => versionLabel(id)).join("、");
+    const matchup = direct ? `各候选分别对战 ${base}` : `各候选与 ${base} 分别对战 ${opponents}`;
+    $("compare-title").textContent = direct ? `对战成绩 · 对手：${base}` : `陪练成绩 · 参照：${base}`;
+    $("delta-heading").textContent = direct ? "与对手分差" : "与参照版分差";
+    const metadata = [suiteLabel(run.suite.name), matchup];
     if (["queued", "running"].includes(run.status)) {
         metadata.push(run.eta_seconds === null ? duration(null) : `剩余 ${duration(run.eta_seconds)}`);
     }
@@ -663,7 +708,7 @@ function showOnline(op, data) {
             link.href = match.replay_url;
             link.target = "_blank";
             link.rel = "noopener";
-            const row = element("p", "");
+            const row = element("p", `我方 ${score.format(match.score)} 分 · `);
             row.append(link);
             output.append(row);
         }
@@ -681,8 +726,16 @@ function showOnline(op, data) {
     output.hidden = false;
 }
 
+$("online-project").addEventListener("change", renderOnlineVersions);
+
 $("test-form").addEventListener("change", (event) => {
-    if (event.target === $("baseline")) renderTestSetup(false);
+    if (event.target === $("baseline") || event.target === $("baseline-project")) renderTestSetup(false);
+    if (event.target.closest("#candidates")) {
+        for (const box of $("candidates").querySelectorAll("input")) {
+            if (box.value === event.target.value) box.checked = event.target.checked;
+        }
+        for (const group of $("candidates").querySelectorAll("details")) markCandidateCount(group);
+    }
     void estimate();
 });
 
@@ -732,7 +785,8 @@ for (const button of document.querySelectorAll("[data-online]")) {
         const op = button.dataset.online;
         const version = $("online-version").value;
         if (op === "submit" && !window.confirm(`将 ${versionLabel(version)} 提交官网计榜评测？`)) return;
-        void withButton(button, async () => showOnline(op, await command("online", op, version)));
+        const args = op === "practice" ? ["--level", $("practice-level").value] : [];
+        void withButton(button, async () => showOnline(op, await command("online", op, version, ...args)));
     });
 }
 
