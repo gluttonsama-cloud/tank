@@ -1,0 +1,19 @@
+{
+  "id": "v-53d70ef17f5acaad7db5192f8431cc340e74aa0f5695a85c2cdbb59005478301",
+  "name": "训练 fit_boss_specialist",
+  "note": "第 12 步",
+  "files": {
+    "boss_forecast.py": "bf3411d98b9087ccae8aa852e18ebe51f7caa9b373ee2c9924e5111cec83a84a",
+    "boss_specialist_policy.py": "c7b459447b24a5c85713d76d22ce535295e4369d262aff59a9d37f1278e0b721",
+    "bot.py": "e8d5697d0e0fccc9164023ec85ddbb37585e456e34cdce7493f51dce864ccfec",
+    "forecast.json": "d2ab08949fe182fb8b7ffb24707faff40eebedf01e0b2a04e2121c84f65e8a16",
+    "stock/bot.py": "8855a5f46cbac6cc2d8c58d559414640eaed640b6580ffab1758cb8ba209ab61",
+    "stock/submission.json": "e5c3dcf3a5c9f035bf1309a6678febf0b8e84c5df100d7fd827160e41a2302a3",
+    "submission.json": "10cdeaa660fb00e0d3b5b0343e8fa8b36beca3a5dfd3021a8368671a5dc4a0db",
+    "training.json": "01b9d3aedcf14a19938d175cb8a43005fa482063465e3f6b57b545e5bccb4370",
+    "weights.json": "551a1f42f270fab010cc7e0b4e686d41d76aadc417a0f964cb978f45fa355e93"
+  },
+  "display_time": "2026-11-25 18:33:19",
+  "runtime": "python",
+  "entrypoint": "bot.py:BossSpecialist"
+}

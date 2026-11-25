@@ -1,0 +1,32 @@
+{
+  "id": "v-0921b165f76c1e667e4b1ae1e22c35dd3ada329ae317800db44b1d71bcc6a174",
+  "name": "boss-specialist",
+  "note": "本地 v31 专项，预测敌方开火和躲弹",
+  "files": {
+    "base/boss_forecast.py": "bf3411d98b9087ccae8aa852e18ebe51f7caa9b373ee2c9924e5111cec83a84a",
+    "base/boss_specialist_policy.py": "c7b459447b24a5c85713d76d22ce535295e4369d262aff59a9d37f1278e0b721",
+    "base/bot.py": "e8d5697d0e0fccc9164023ec85ddbb37585e456e34cdce7493f51dce864ccfec",
+    "base/forecast.json": "d2ab08949fe182fb8b7ffb24707faff40eebedf01e0b2a04e2121c84f65e8a16",
+    "base/stock/bot.py": "8855a5f46cbac6cc2d8c58d559414640eaed640b6580ffab1758cb8ba209ab61",
+    "base/stock/submission.json": "e5c3dcf3a5c9f035bf1309a6678febf0b8e84c5df100d7fd827160e41a2302a3",
+    "base/submission.json": "10cdeaa660fb00e0d3b5b0343e8fa8b36beca3a5dfd3021a8368671a5dc4a0db",
+    "base/training.json": "01b9d3aedcf14a19938d175cb8a43005fa482063465e3f6b57b545e5bccb4370",
+    "base/weights.json": "551a1f42f270fab010cc7e0b4e686d41d76aadc417a0f964cb978f45fa355e93",
+    "boss_local_aim.py": "78d02092320fc65e5381838c22c06337ff3d4d98b0aa3cc919295cb7adf19b28",
+    "boss_local_policy.py": "c04da3b8c6751c7cf7b3be5b419411ccb0608aa2c58fcc57543a4bd93df849a2",
+    "boss_local_world.py": "3e04f894219745473e44f75316da07c7894258b580518537260fcdec4541a534",
+    "boss_specialist_policy.py": "e1aa5b3650954ab1e5339771d807cbace9c95cb35a19d5baadcdf659174d3260",
+    "bot.py": "34b8e4eb94fc8f900f5ef7cb24cd0d81b2cbd0061cac67ccf5093f89b75a3e65",
+    "replica/boss_sparring_policy.py": "4e7e5fd264fbec0e93a461b3ecce07ce43cf84d44be8cb4646bf33a0eab51f39",
+    "replica/bot.py": "c893e1f472b1e86383826e9cd9e61c736425c4fb0ddbdd1d2e7f05385f3cccb7",
+    "replica/submission.json": "e099604ecd9e79115246f228d74b952e68059451f514bc49658f6b5e69fcebbf",
+    "replica/training.json": "f8d4f82beb499299a35d7d1acc92ea5ce012f776b70ca2fdfedc6a9e11e9b860",
+    "replica/weights.npz": "e0aed128042878afaecfc1d51452a504c5d6d9a51c394da0d328f2bc8127dc35",
+    "submission.json": "a13fe4537d5353c8e3d3bae722db661356230e0db484fb3657ec9687bf2f4594",
+    "training.json": "66ecb93369d12af4c3ac01f38985972ea3692d83e3bf574e4a57ef74423b97a9",
+    "weights.json": "151220f7fefaccee2448c8a1fd5d3305952e541ab988d538643e41b4b6ef46e4"
+  },
+  "display_time": "2026-11-25 20:36:18",
+  "runtime": "python",
+  "entrypoint": "bot.py:Specialist"
+}
