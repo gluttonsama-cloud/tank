@@ -1,6 +1,7 @@
 """Local submission preflight and explicit SeedCup team operations."""
 
 import asyncio
+from functools import partial
 import getpass
 import gzip
 import hashlib
@@ -30,7 +31,7 @@ from seedcup.game.runner import match_info
 from seedcup.server.evaluation_manifest import manifest
 from seedcup.server.hub import PRACTICE_NAMES
 
-from . import versions
+from . import practice_priority, versions
 from .eval_plan import SCORE_ITEMS
 from .process_bot import ProcessBot
 from .workspace import read_json, write_json
@@ -48,6 +49,22 @@ class OnlineError(ValueError):
 
 
 class RequestUncertain(OnlineError):
+    pass
+
+
+class PracticeDeferred(OnlineError):
+    """The current collection attempt yielded, with any finished games preserved."""
+
+    room: str | None = None
+    close_error: str | None = None
+    matches: list[dict]
+
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.matches = []
+
+
+class _ConnectionReplaced(OnlineError):
     pass
 
 
@@ -494,16 +511,32 @@ def matches(root: Path, *, client=None) -> list[dict]:
     ]
 
 
-async def _receive(ws, timeout=20) -> dict:
-    message = json.loads(await asyncio.wait_for(ws.recv(), timeout))
+async def _receive(ws, timeout=20, *, check=None) -> dict:
+    if check is None:
+        raw = await asyncio.wait_for(ws.recv(), timeout)
+    else:
+        task = asyncio.create_task(ws.recv())
+        try:
+            async with asyncio.timeout(timeout):
+                while not task.done():
+                    check()
+                    await asyncio.wait((task,), timeout=0.1)
+                raw = task.result()
+        finally:
+            if not task.done():
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+    message = json.loads(raw)
     if message["type"] == "error":
         if message["code"] == "replaced":
-            raise OnlineError("连接被替换")
+            raise _ConnectionReplaced("连接被替换")
         raise OnlineError(message["message"])
     return message
 
 
 PRACTICE_LEVELS = tuple(PRACTICE_NAMES)
+_SAMPLE_TAG = re.compile(r"sample-[0-9a-f]{32}-[0-9]{1,19}")
+_HOST_TAG = re.compile(r"host:[0-9a-f]{32}")
 
 
 def _practice_path(root: Path, record: dict) -> Path:
@@ -620,18 +653,172 @@ def replay(root: Path, match_id: int, *, client=None) -> dict:
     return _archive_practice_replay(root, client, record)
 
 
-async def _room_matches(root, source, ws, games, practice_info, completed):
+class _PracticeRoom:
+    def __init__(self, root, client, *, background=False, stop=None):
+        self.root = root
+        self.client = client
+        self.background = background
+        self.stop = stop
+        mode = "collector" if background else "practice"
+        self.sdk = f"tank-workbench/{mode}/{uuid4().hex}"
+        self.pending = root / ".local/online" / f"collection-room-{client.user['id']}.json"
+
+    def check(self):
+        if self.background and practice_priority.foreground_pending(self.root):
+            raise PracticeDeferred("前台官网练习优先")
+        if self.stop is not None and self.stop():
+            raise PracticeDeferred("后台采集已暂停")
+
+    async def state(self):
+        state = await asyncio.to_thread(self.client.request, "GET", "/api/me")
+        if state["user"]["id"] != self.client.user["id"]:
+            raise OnlineError("官网状态与采集账号不一致")
+        return state
+
+    async def ready(self, *, connected):
+        self.check()
+        state = await self.state()
+        self.check()
+        if state["in_event"] or state["match"] is not None:
+            raise PracticeDeferred("队伍正在对局或参加正式比赛")
+        connection = state["client"]
+        if connected:
+            if not connection["online"] or connection["sdk"] != self.sdk:
+                raise PracticeDeferred("官网练习连接已断开或被替换")
+        elif connection["online"]:
+            raise PracticeDeferred("队伍已有在线客户端")
+
+    async def verify_match(self, code, match_id):
+        state = await self.state()
+        connection, match = state["client"], state["match"]
+        if (state["in_event"] or not connection["online"] or connection["sdk"] != self.sdk
+                or match is None or match["id"] != match_id or match["kind"] != "room" or match["room"] != code):
+            raise PracticeDeferred("官网已切换到其他连接或对局")
+        entry = read_json(self.pending)
+        write_json(self.pending, entry | {"seen_game": True, "last_game_seen": match["game"] == entry["games"] - 1})
+        self.check()
+
+    async def rooms(self):
+        listed = await asyncio.to_thread(self.client.request, "GET", ROOMS)
+        return {room["code"]: room for room in listed["rooms"]}
+
+    async def recover(self):
+        if not self.pending.is_file():
+            return
+        entry = read_json(self.pending)
+        code = entry["code"]
+        if code is not None:
+            await self.close(code)
+            return
+        rooms = await self.rooms()
+        if rooms.keys() - entry["existing"]:
+            raise PracticeDeferred("上次创建练习房间未收到确认，请先核对选手中心的房间")
+        self.pending.unlink()
+
+    async def create(self, fields):
+        existing = sorted(await self.rooms())
+        await self.ready(connected=True)
+        write_json(self.pending, {"code": None, "existing": existing})
+        try:
+            room = await asyncio.to_thread(self.client.request, "POST", ROOMS, fields=fields)
+        except RemoteError:
+            self.pending.unlink()
+            raise
+        code = room["code"]
+        if (not re.fullmatch(r"[A-Z0-9]{6}", code) or code in existing or not room["is_owner"]):
+            raise OnlineError("官网返回的练习房间不属于本次请求")
+        write_json(self.pending, {"code": code, "games": fields["games"], "start": "new"})
+        return code
+
+    async def start(self, code):
+        await self.ready(connected=True)
+        entry = read_json(self.pending)
+        write_json(self.pending, entry | {"start": "requested"})
+        try:
+            await asyncio.to_thread(self.client.request, "POST", f"{ROOMS}/{code}/start")
+        except RemoteError:
+            write_json(self.pending, entry)
+            raise
+        write_json(self.pending, entry | {"start": "accepted"})
+
+    async def own_match(self, code):
+        # SDK 0.4.3's close handler aborts every active room/ladder game of the owner.
+        state = await self.state()
+        connection, match = state["client"], state["match"]
+        if (state["in_event"] or (connection["online"] and connection["sdk"] != self.sdk)
+                or (match is not None and (match["kind"] != "room" or match["room"] != code))):
+            raise PracticeDeferred(f"队伍正在使用官网，练习房间 {code} 暂缓关闭")
+        return match
+
+    async def no_remaining_games(self, entry, may_have_started):
+        if not may_have_started or entry.get("last_game_seen"):
+            return True
+        history = await asyncio.to_thread(self.client.request, "GET", "/api/team/matches")
+        matches = {row["id"]: row for row in history["matches"] if row["room_code"] == entry["code"]}
+        if any(row["game"] == entry["games"] - 1 and row["status"] == "finished" for row in matches.values()):
+            return True
+        first = entry.get("closing_first")
+        # The history endpoint excludes void matches. A first game that finished
+        # during close stays visible, and the still-scheduled second game can start.
+        return not matches or (first is not None and first not in matches)
+
+    async def close(self, code):
+        entry = read_json(self.pending)
+        may_have_started = entry.get("start") in ("requested", "accepted") or entry.get("starting", False)
+        idle_seen = False
+        deadline = time.monotonic() + 20
+        while True:
+            room = (await self.rooms()).get(code)
+            match = await self.own_match(code)
+            idle = False
+            if match is not None:
+                may_have_started = True
+                has_next = match["game"] == 0 and entry.get("games", 1) == 2
+                entry |= {"start": "accepted", "seen_game": True}
+                entry |= {"closing_first": match["id"]} if has_next else {"last_game_seen": True}
+                write_json(self.pending, entry)
+                await asyncio.to_thread(self.client.request, "POST", f"{ROOMS}/{code}/close")
+                if not has_next or await self.no_remaining_games(entry, may_have_started):
+                    break
+            elif room is None:
+                idle = await self.no_remaining_games(entry, may_have_started)
+                if idle and (idle_seen or not may_have_started or entry.get("last_game_seen")):
+                    break
+            elif room["status"] in ("waiting", "finished"):
+                idle = True
+                # SDK startup sets playing before it first yields. Recheck an idle
+                # room once when a start request may still be reaching the server.
+                settled = (not may_have_started or room["status"] == "finished"
+                           or entry.get("seen_game") or room["matches"])
+                if idle_seen or settled:
+                    await asyncio.to_thread(self.client.request, "POST", f"{ROOMS}/{code}/close")
+                    if settled:
+                        break
+                    # A concurrent start could have been accepted just before close.
+                    idle = False
+            # The SDK leaves the room playing between games. Closing while there is
+            # no live game would leave its task scheduled to start the next one.
+            if time.monotonic() >= deadline:
+                raise PracticeDeferred(f"官网练习房间 {code} 尚未退出，请稍后重试")
+            idle_seen = idle
+            await asyncio.sleep(0.25)
+        self.pending.unlink()
+
+
+async def _room_matches(root, bot_factory, ws, games, practice_info, completed, room):
     bot = None
     match_id = None
     opponent = PRACTICE_NAMES[practice_info["level"]]
+    check = room.check if room.background else None
     try:
         while len(completed) < games:
-            message = await _receive(ws)
+            message = await _receive(ws, check=check)
             kind = message["type"]
-            if kind == "match_start" and message["kind"] == "room":
+            if kind == "match_start":
+                await room.verify_match(practice_info["room"], message["match_id"])
                 if message["opponent"] != opponent:
                     raise OnlineError("在线练习连接到了其他对手")
-                bot = ProcessBot(root, source, practice_info["version_id"], match_seconds=None)
+                bot = bot_factory()
                 match_id = message["match_id"]
                 side = message["side"]
                 map_seed = message["map"]["seed"]
@@ -639,13 +826,14 @@ async def _room_matches(root, source, ws, games, practice_info, completed):
             elif match_id is not None and message.get("match_id") == match_id:
                 if kind == "obs":
                     raw = await asyncio.to_thread(bot.decide, message)
+                    if check is not None:
+                        check()
                     action, invalid = parse_action(raw)
                     if invalid:
                         raise OnlineError(f"策略第 {message['frame']} 帧动作字段类型或范围无效")
                     await ws.send(json.dumps({"type": "action", "match_id": match_id,
                                               "frame": message["frame"], **action}))
                 elif kind == "match_end":
-                    await asyncio.to_thread(bot.on_match_end, message["result"])
                     record = practice_info | {
                         "id": match_id, "result": message["result"], "side": side,
                         "score": message["result"]["scores"][("red", "blue").index(side)]["total"],
@@ -653,66 +841,138 @@ async def _room_matches(root, source, ws, games, practice_info, completed):
                     }
                     write_json(_practice_path(root, record), record)
                     completed.append(record)
+                    tag = record.get("case_tag")
+                    if tag is not None and _SAMPLE_TAG.fullmatch(tag):
+                        write_json(root / ".local/sampling/receipts" / tag / f"{match_id}.json", record)
+                    await asyncio.to_thread(bot.on_match_end, message["result"])
                     bot = match_id = None
                 elif kind == "match_abort":
+                    if room.background:
+                        raise PracticeDeferred(message["reason"])
                     raise OnlineError(message["reason"])
     finally:
         if bot is not None:
             bot.close()
 
 
-async def _practice(root, version_id, client, games, seed, level, completed):
-    source = versions.snapshot_data(root, version_id)
+async def _practice(root, version_id, client, games, seed, level, result, room=None, case_tag=None,
+                    bot_factory=None):
+    if bot_factory is None:
+        source = versions.snapshot_data(root, version_id)
+        bot_factory = partial(ProcessBot, root, source, version_id, match_seconds=None)
+    room = room if room is not None else _PracticeRoom(root, client)
+    check = room.check if room.background else None
+    room.check()
+    await room.recover()
+    await room.ready(connected=False)
     async with websockets.connect(SOCKET, open_timeout=10, max_size=2**20) as ws:
+        # The server replaces same-team sockets during login. The host lease
+        # serializes workbench clients, and this check also detects existing external clients.
+        await room.ready(connected=False)
         await ws.send(json.dumps({"type": "login", "username": client.username,
-                                  "password": client.password, "sdk": "tank-workbench/0.1"}))
-        welcome = await _receive(ws, 15)
+                                  "password": client.password, "sdk": room.sdk}))
+        welcome = await _receive(ws, 15, check=check)
         if welcome["type"] != "welcome" or welcome["team"]["id"] != client.user["id"]:
             raise OnlineError("在线练习连接的账号与选手中心不一致")
-        room = await asyncio.to_thread(client.request, "POST", ROOMS, fields={
-            "opponent": "baseline", "level": level, "games": games, "seed": seed, "public": True,
-        })
-        code = room["code"]
-        if not re.fullmatch(r"[A-Z0-9]{6}", code):
-            raise OnlineError("官网返回了无效的练习房间号")
+        code = await room.create({"opponent": "baseline", "level": level, "games": games, "seed": seed,
+                                  "public": not room.background})
+        result["room"] = code
         practice_info = {"version_id": version_id, "level": level, "seed": seed,
                          "room": code, "team_id": client.user["id"]}
-        close_error = None
+        if case_tag is not None:
+            practice_info["case_tag"] = case_tag
         try:
-            await asyncio.to_thread(client.request, "POST", f"{ROOMS}/{code}/start")
+            await room.start(code)
             async with asyncio.timeout(games * 100 + 20):
-                await _room_matches(root, source, ws, games, practice_info, completed)
+                await _room_matches(root, bot_factory, ws, games, practice_info, result["matches"], room)
         finally:
             try:
-                await asyncio.to_thread(client.request, "POST", f"{ROOMS}/{code}/close")
+                await room.close(code)
             except OnlineError as error:
-                close_error = str(error)
-        result = {"room": code, "level": level, "version_id": version_id, "matches": completed}
-        if close_error is not None:
-            result["close_error"] = close_error
-        return result
+                result["close_error"] = str(error)
 
 
-def practice(root: Path, version_id: str, *, client=None, games=1, seed=None, level="rookie") -> dict:
+def _validate_practice(root, version_id, games, seed, level, case_tag, *, remote_bot=False):
     if level not in PRACTICE_LEVELS:
         raise OnlineError(f"未知练习档位 {level}")
     if type(games) is not int or games not in (1, 2):
         raise OnlineError("在线练习支持 1 局或 2 局")
     if seed is not None and (type(seed) is not int or not 0 <= seed < 2**31):
         raise OnlineError("地图种子需为 0 到 2147483647 的整数")
-    versions.verify(root, version_id)
-    client = client if client is not None else OnlineClient.login(root)
-    completed = []
+    if case_tag is not None and (not isinstance(case_tag, str)
+                                or not (_SAMPLE_TAG.fullmatch(case_tag) or _HOST_TAG.fullmatch(case_tag))):
+        raise OnlineError("练习任务标识格式无效")
+    if remote_bot:
+        if not isinstance(version_id, str) or not re.fullmatch(r"v-[0-9a-f]{64}", version_id):
+            raise OnlineError("策略快照 ID 无效")
+    else:
+        versions.verify(root, version_id)
+
+
+def _save_practice_replays(root, client, completed):
+    for index, record in enumerate(completed):
+        try:
+            completed[index] = _archive_practice_replay(root, client, record, retry_pending=True)
+        except (OnlineError, OSError) as error:
+            record["replay_error"] = str(error)
+
+
+def practice(root: Path, version_id: str, *, client=None, games=1, seed=None, level="rookie", case_tag=None,
+             bot_factory=None) -> dict:
+    _validate_practice(root, version_id, games, seed, level, case_tag, remote_bot=bot_factory is not None)
+    result = {"room": None, "level": level, "version_id": version_id, "matches": []}
     try:
-        result = asyncio.run(_practice(root, version_id, client, games, seed, level, completed))
-    except TimeoutError:
-        raise OnlineError("在线练习超时") from None
-    except websockets.exceptions.WebSocketException:
-        raise OnlineError("练习连接已断开，可稍后重试") from None
+        try:
+            with practice_priority.foreground(root):
+                client = client if client is not None else OnlineClient.login(root)
+                asyncio.run(_practice(root, version_id, client, games, seed, level, result,
+                                      case_tag=case_tag, bot_factory=bot_factory))
+        except TimeoutError:
+            raise OnlineError("在线练习超时") from None
+        except websockets.exceptions.WebSocketException:
+            raise OnlineError("练习连接已断开，可稍后重试") from None
+    except (ValueError, RuntimeError, OSError) as error:
+        error.room = result["room"]
+        error.close_error = result.get("close_error")
+        error.matches = result["matches"]
+        raise
     finally:
-        for index, record in enumerate(completed):
+        _save_practice_replays(root, client, result["matches"])
+    return result
+
+
+def collect_practice(root: Path, version_id: str, *, client=None, games=2, seed=None, level="rookie",
+                     stop=None, case_tag=None) -> dict:
+    """Run one background room on the shared workbench host's team account."""
+    _validate_practice(root, version_id, games, seed, level, case_tag)
+    result = {"room": None, "level": level, "version_id": version_id, "matches": []}
+    try:
+        with practice_priority.collection(root) as acquired:
+            if not acquired or practice_priority.foreground_pending(root):
+                raise PracticeDeferred("工作台已有官网练习请求")
+            if stop is not None and stop():
+                raise PracticeDeferred("后台采集已暂停")
             try:
-                completed[index] = _archive_practice_replay(root, client, record, retry_pending=True)
-            except (OnlineError, OSError) as error:
-                record["replay_error"] = str(error)
+                client = client if client is not None else OnlineClient.login(root)
+                room = _PracticeRoom(root, client, background=True, stop=stop)
+                asyncio.run(_practice(root, version_id, client, games, seed, level, result, room, case_tag))
+            except (_ConnectionReplaced, RequestUncertain) as error:
+                raise PracticeDeferred(str(error)) from None
+            except RemoteError as error:
+                if error.status != 409:
+                    raise
+                raise PracticeDeferred(str(error)) from None
+            except TimeoutError:
+                raise PracticeDeferred("后台官网练习超时") from None
+            except (ConnectionError, websockets.exceptions.WebSocketException):
+                raise PracticeDeferred("后台练习连接已断开") from None
+        if "close_error" in result:
+            raise PracticeDeferred(result["close_error"])
+    except PracticeDeferred as error:
+        error.room = result["room"]
+        error.close_error = result.get("close_error")
+        error.matches = result["matches"]
+        raise
+    finally:
+        _save_practice_replays(root, client, result["matches"])
     return result

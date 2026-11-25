@@ -4,7 +4,8 @@ from pathlib import Path
 import shutil
 import tempfile
 
-from tank import online, versions
+from tank import online, practice_host, versions
+from tank.sampling import check_host
 from tank.workspace import project_root, read_json, write_json
 
 LANCER = "v-0081349ee9d189d06bc534ecdac22f731b4908714c90b45644a1962aea0583f5"
@@ -35,7 +36,7 @@ def snapshots(root, lancer=LANCER):
 
 def collect(root, batch, lancer=LANCER):
     keys = snapshots(root, lancer)
-    client = online.OnlineClient.login(root)
+    client = None
     selected = []
     for seed, name in BATCHES[batch]:
         key = keys[name]
@@ -43,8 +44,12 @@ def collect(root, batch, lancer=LANCER):
         records = sorted((r for p in folder.glob("*.json") if (r := read_json(p))["seed"] == seed),
                          key=lambda r: r["id"])
         if {r["side"] for r in records} != {"red", "blue"}:
+            check_host(root)
+            if client is None:
+                client = online.OnlineClient.login(root)
             print(batch, seed, name, flush=True)
-            new = online.practice(root, key, client=client, level="boss", seed=seed, games=2)
+            new = online.collect_practice(root, key, client=client, level="boss", seed=seed, games=2,
+                                          stop=lambda: not practice_host.host_running(root))
             records.extend(new["matches"])
         for side in ("red", "blue"):
             record = next(r for r in records if r["side"] == side)

@@ -3,6 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 from threading import Thread
+from types import SimpleNamespace
 from urllib.request import urlopen
 from zipfile import ZipFile
 
@@ -169,13 +170,15 @@ def test_practice_runs_room_and_closes_without_reconnect(tmp_path, monkeypatch, 
     result = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
     socket = _practice_socket(level, result)
     monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: socket)
+    monkeypatch.setattr(online, "uuid4", lambda: SimpleNamespace(hex="0" * 32))
     payload = _replay_payload(level, result)
     raw = gzip.compress(json.dumps(payload).encode())
     pending = [online.RemoteError(404, "回放还在生成，稍后再试")] if level == "rookie" else []
-    client = _MockClient([{"code": "AB12CD"}, {"ok": True}, {"ok": True}, *pending, raw])
+    client = _MockClient([*_practice_responses(_FOREGROUND_SDK), *pending, raw])
 
     progress = online.practice(tmp_path, key, client=client, level=level)
-    assert client.requests[0][2]["fields"]["level"] == level
+    assert next(fields["fields"]["level"] for method, path, fields in client.requests
+                if method == "POST" and path == online.ROOMS) == level
     record = read_json(tmp_path / ".local/online/practice" / key / level / "100.json")
     assert record["score"] == 20 and record["level"] == level
     assert record["version_id"] == key and record["side"] == "blue" and record["map_seed"] == 42
@@ -185,10 +188,9 @@ def test_practice_runs_room_and_closes_without_reconnect(tmp_path, monkeypatch, 
     replay_path = tmp_path / ".local/online/replays/100.json.gz"
     assert record["replay_path"] == progress["matches"][0]["replay_path"] == str(replay_path)
     assert replay_path.read_bytes() == raw
-    assert [path for _, path, _ in client.requests] == [
-        online.ROOMS, f"{online.ROOMS}/AB12CD/start", f"{online.ROOMS}/AB12CD/close",
-        *(["/api/replays/100"] * (len(pending) + 1)),
-    ]
+    assert [path for method, path, _ in client.requests if method == "POST"] == [
+        online.ROOMS, f"{online.ROOMS}/AB12CD/start", f"{online.ROOMS}/AB12CD/close"]
+    assert sum(path == "/api/replays/100" for _, path, _ in client.requests) == len(pending) + 1
     assert client.requests[-1] == ("GET", "/api/replays/100", {"compressed": True})
     assert socket.sent[1] == {"type": "action", "match_id": 100, "frame": 0,
                               "forward": 0.0, "turn": 0.0, "fire": False}
@@ -199,7 +201,8 @@ def test_replay_failure_keeps_score_and_can_retry_from_cli(tmp_path, monkeypatch
     result = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
     socket = _practice_socket("boss", result)
     monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: socket)
-    client = _MockClient([{"code": "AB12CD"}, {"ok": True}, {"ok": True}, online.RequestUncertain("超时")])
+    monkeypatch.setattr(online, "uuid4", lambda: SimpleNamespace(hex="0" * 32))
+    client = _MockClient([*_practice_responses(_FOREGROUND_SDK), online.RequestUncertain("超时")])
 
     record = online.practice(tmp_path, key, client=client, level="boss")["matches"][0]
 
@@ -313,11 +316,242 @@ def test_practice_stops_when_connection_is_replaced(tmp_path, monkeypatch):
         return socket
 
     monkeypatch.setattr(online.websockets, "connect", connect)
-    client = _MockClient([{"code": "AB12CD"}, {"ok": True}, {"ok": True}])
+    client = _MockClient([*_practice_responses(_FOREGROUND_SDK, finish=False), _room_list("playing"),
+                          _official_state("other-client", _room_match("EF34GH"))])
+    monkeypatch.setattr(online, "uuid4", lambda: SimpleNamespace(hex="0" * 32))
 
-    with pytest.raises(online.OnlineError, match="连接被替换"):
+    with pytest.raises(online.OnlineError, match="连接被替换") as failure:
         online.practice(tmp_path, key, client=client)
     assert len(calls) == 1
+    assert "暂缓关闭" in failure.value.close_error
+    assert not any(path.endswith("/close") for _, path, _ in client.requests)
+
+
+_COLLECTION_SDK = "tank-workbench/collector/" + "0" * 32
+_FOREGROUND_SDK = "tank-workbench/practice/" + "0" * 32
+
+
+def _official_state(sdk=None, match=None, *, in_event=False):
+    return {"user": {"id": 8}, "client": {"online": sdk is not None, "sdk": sdk},
+            "match": match, "in_event": in_event}
+
+
+def _room_match(code="AB12CD", game=0, match_id=100):
+    return {"id": match_id, "room": code, "kind": "room", "game": game}
+
+
+def _room_list(status, code="AB12CD", matches=()):
+    return {"rooms": [{"code": code, "status": status, "matches": list(matches)}]}
+
+
+def _practice_responses(sdk, *, finish=True):
+    own = _official_state(sdk)
+    setup = [_official_state(), _official_state(), {"rooms": []}, own,
+             {"code": "AB12CD", "is_owner": True}, own, {"ok": True}]
+    if finish:
+        setup += [_official_state(sdk, _room_match()), _room_list("finished"), own, {"ok": True}]
+    return setup
+
+
+@pytest.mark.parametrize("practice", [online.practice, online.collect_practice])
+@pytest.mark.parametrize("state", [_official_state("other-client"), _official_state(in_event=True),
+                                   _official_state(match={"id": 909})])
+def test_practice_defers_before_connecting_when_team_is_busy(tmp_path, monkeypatch, state, practice):
+    key = _snapshot(tmp_path, BOT)
+    client = _MockClient([state])
+    monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: pytest.fail("connected"))
+
+    with pytest.raises(online.PracticeDeferred) as failure:
+        practice(tmp_path, key, client=client)
+
+    assert failure.value.matches == []
+    assert client.requests == [("GET", "/api/me", {})]
+
+
+@pytest.mark.parametrize("practice", [online.practice, online.collect_practice])
+def test_practice_rechecks_before_sending_login(tmp_path, monkeypatch, practice):
+    key = _snapshot(tmp_path, BOT)
+    client = _MockClient([_official_state(), _official_state("other-client")])
+    socket = _MockSocket([])
+    monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: socket)
+
+    with pytest.raises(online.PracticeDeferred, match="已有在线客户端"):
+        practice(tmp_path, key, client=client)
+    assert not socket.sent
+
+
+def test_foreground_start_conflict_does_not_abort_the_other_match(tmp_path, monkeypatch):
+    key = _snapshot(tmp_path, BOT)
+    socket = _MockSocket([{"type": "welcome", "team": {"id": 8}}])
+    monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: socket)
+    monkeypatch.setattr(online, "uuid4", lambda: SimpleNamespace(hex="0" * 32))
+    state = _official_state(_FOREGROUND_SDK, _room_match("EF34GH"))
+    responses = _practice_responses(_FOREGROUND_SDK, finish=False)
+    responses[-1] = online.RemoteError(409, "队伍正在打另一场对局")
+    client = _MockClient([*responses, _room_list("waiting"), state])
+
+    with pytest.raises(online.RemoteError, match="正在打另一场对局") as failure:
+        online.practice(tmp_path, key, client=client)
+    assert "暂缓关闭" in failure.value.close_error
+    assert not any(path.endswith("/close") for _, path, _ in client.requests)
+
+
+@pytest.mark.parametrize("replaced", [False, True])
+def test_collection_keeps_partial_receipt_and_closes_only_its_own_room(tmp_path, monkeypatch, replaced):
+    key = _snapshot(tmp_path, BOT)
+    final = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
+    socket = _practice_socket("boss", final)
+    if replaced:
+        socket.messages = iter([*socket.messages, {"type": "error", "code": "replaced"}])
+    monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: socket)
+    monkeypatch.setattr(online, "uuid4", lambda: SimpleNamespace(hex="0" * 32))
+    own = _official_state(_COLLECTION_SDK)
+    active = _official_state(_COLLECTION_SDK, _room_match())
+    external = _official_state("other-client", _room_match("EF34GH", match_id=200))
+    raw = gzip.compress(json.dumps(_replay_payload("boss", final)).encode())
+    responses = [_official_state(), _official_state(), {"rooms": [{"code": "EF34GH"}]}, own,
+                 {"code": "AB12CD", "is_owner": True}, own, {"ok": True}, active]
+    client = _MockClient([*responses, _room_list("playing"), external, raw] if replaced
+                         else [*responses, _room_list("finished"), own, {"ok": True}, raw])
+    tag = "sample-" + "f" * 32 + "-15"
+    kwargs = {"client": client, "level": "boss", "seed": 42, "case_tag": tag}
+
+    if replaced:
+        with pytest.raises(online.PracticeDeferred, match="连接被替换") as failure:
+            online.collect_practice(tmp_path, key, games=2, **kwargs)
+        assert failure.value.room == "AB12CD"
+        assert "暂缓关闭" in failure.value.close_error
+        records = failure.value.matches
+    else:
+        records = online.collect_practice(tmp_path, key, games=1, **kwargs)["matches"]
+
+    assert len(records) == 1 and records[0]["case_tag"] == tag and records[0]["score"] == 20
+    receipt = read_json(tmp_path / ".local/sampling/receipts" / tag / "100.json")
+    assert receipt | {"replay_path": records[0]["replay_path"]} == records[0]
+    assert client.requests[4][2]["fields"]["public"] is False
+    endpoints = [path for _, path, _ in client.requests]
+    assert f"{online.ROOMS}/EF34GH/close" not in endpoints
+    assert (f"{online.ROOMS}/AB12CD/close" in endpoints) is not replaced
+    assert (tmp_path / ".local/online/collection-room-8.json").is_file() is replaced
+
+
+def test_foreground_clears_a_confirmed_orphan_before_signing_in(tmp_path, monkeypatch):
+    key = _snapshot(tmp_path, BOT)
+    pending = tmp_path / ".local/online/collection-room-8.json"
+    write_json(pending, {"code": "EF34GH"})
+    final = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
+    old_match = _official_state(match=_room_match("EF34GH", match_id=99))
+    raw = gzip.compress(json.dumps(_replay_payload("rookie", final)).encode())
+    client = _MockClient([_room_list("playing", "EF34GH"), old_match, {"ok": True},
+                          *_practice_responses(_FOREGROUND_SDK), raw])
+    monkeypatch.setattr(online, "uuid4", lambda: SimpleNamespace(hex="0" * 32))
+
+    def connect(*args, **kwargs):
+        assert ("POST", f"{online.ROOMS}/EF34GH/close", {}) in client.requests
+        assert not pending.exists()
+        return _practice_socket("rookie", final)
+
+    monkeypatch.setattr(online.websockets, "connect", connect)
+    tag = "host:" + "d" * 32
+    result = online.practice(tmp_path, key, client=client, case_tag=tag)
+    assert result["room"] == "AB12CD"
+    assert result["matches"][0]["case_tag"] == tag
+
+
+def test_foreground_leaves_orphan_while_another_client_is_using_the_team(tmp_path, monkeypatch):
+    key = _snapshot(tmp_path, BOT)
+    pending = tmp_path / ".local/online/collection-room-8.json"
+    write_json(pending, {"code": "EF34GH"})
+    client = _MockClient([{"rooms": [{"code": "EF34GH"}]}, _official_state("other-client")])
+    monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: pytest.fail("connected"))
+
+    with pytest.raises(online.PracticeDeferred, match="暂缓关闭"):
+        online.practice(tmp_path, key, client=client)
+    assert pending.is_file()
+    assert [method for method, _, _ in client.requests] == ["GET", "GET"]
+
+
+@pytest.mark.parametrize("already_closed", [False, True])
+def test_foreground_recovers_start_request_that_never_reached_official(tmp_path, monkeypatch, already_closed):
+    key = _snapshot(tmp_path, BOT)
+    pending = tmp_path / ".local/online/collection-room-8.json"
+    write_json(pending, {"code": "EF34GH", "games": 2, "start": "requested"})
+    if already_closed:
+        inspect = [{"rooms": []}, _official_state(), {"matches": []}]
+    else:
+        inspect = [_room_list("waiting", "EF34GH"), _official_state()]
+    final = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
+    raw = gzip.compress(json.dumps(_replay_payload("rookie", final)).encode())
+    closed_state = [{"rooms": []}, _official_state(), {"matches": []}]
+    close = [] if already_closed else [{"ok": True}, *closed_state, *closed_state]
+    client = _MockClient([*inspect, *inspect, *close, *_practice_responses(_FOREGROUND_SDK), raw])
+    monkeypatch.setattr(online, "uuid4", lambda: SimpleNamespace(hex="0" * 32))
+
+    def connect(*args, **kwargs):
+        closed = ("POST", f"{online.ROOMS}/EF34GH/close", {}) in client.requests
+        assert closed is not already_closed and not pending.exists()
+        return _practice_socket("rookie", final)
+
+    monkeypatch.setattr(online.websockets, "connect", connect)
+    assert len(online.practice(tmp_path, key, client=client)["matches"]) == 1
+
+
+def test_collection_leaves_unknown_room_untouched_after_lost_create_response(tmp_path, monkeypatch):
+    key = _snapshot(tmp_path, BOT)
+    monkeypatch.setattr(online, "uuid4", lambda: SimpleNamespace(hex="0" * 32))
+    monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: _practice_socket("rookie", {}))
+    client = _MockClient([_official_state(), _official_state(), {"rooms": []},
+                          _official_state(_COLLECTION_SDK), online.RequestUncertain("官网回复超时")])
+    with pytest.raises(online.PracticeDeferred, match="官网回复超时"):
+        online.collect_practice(tmp_path, key, client=client)
+
+    monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: pytest.fail("connected"))
+    client = _MockClient([{"rooms": [{"code": "EF34GH"}]}])
+    with pytest.raises(online.PracticeDeferred, match="未收到确认"):
+        online.collect_practice(tmp_path, key, client=client)
+    assert client.requests == [("GET", online.ROOMS, {})]
+
+
+def test_collection_rejects_path_like_tags_before_requests(tmp_path):
+    with pytest.raises(online.OnlineError, match="标识格式无效"):
+        online.collect_practice(tmp_path, "unused", client=_MockClient([]), case_tag="../practice")
+
+
+def test_remote_bot_needs_no_host_snapshot_and_finished_score_survives_failed_cleanup(tmp_path, monkeypatch):
+    key = "v-" + "7" * 64
+    tag = "host:" + "1" * 32
+    final = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
+    path = tmp_path / ".local/online/practice" / key / "rookie/100.json"
+    socket = _practice_socket("rookie", final)
+    monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: socket)
+    monkeypatch.setattr(online, "uuid4", lambda: SimpleNamespace(hex="0" * 32))
+    monkeypatch.setattr(versions, "snapshot_data", lambda *args: pytest.fail("read host strategy source"))
+    raw = gzip.compress(json.dumps(_replay_payload("rookie", final)).encode())
+    client = _MockClient([*_practice_responses(_FOREGROUND_SDK), raw])
+    calls = []
+
+    class RemoteBot:
+        def on_match_start(self, message):
+            calls.append(message["type"])
+
+        def decide(self, message):
+            calls.append(message["type"])
+            return {"forward": 0, "turn": 0, "fire": False}
+
+        def on_match_end(self, result):
+            assert read_json(path)["result"] == result
+            calls.append("match_end")
+            raise RuntimeError("远程策略收尾失败")
+
+        def close(self):
+            calls.append("close")
+
+    with pytest.raises(RuntimeError, match="收尾失败") as failure:
+        online.practice(tmp_path, key, client=client, case_tag=tag, bot_factory=RemoteBot)
+    assert calls == ["match_start", "obs", "match_end", "close"]
+    assert failure.value.matches == [read_json(path)]
+    assert read_json(path)["case_tag"] == tag
+    assert online.practice_replay_path(tmp_path, 100).read_bytes() == raw
 
 
 def _completed(submission_id, digest, score):

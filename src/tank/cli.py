@@ -16,9 +16,10 @@ def parser():
     web = groups.add_parser("web", help="打开本地工作台")
     web.add_argument("--port", type=int, default=8765)
     web.add_argument("--open", action="store_true")
-    from . import jobs, lan
+    from . import jobs, lan, sampling
     jobs.add_arguments(groups.add_parser("jobs", help="后台训练"))
     lan.add_arguments(groups.add_parser("lan", help="局域网分片"))
+    sampling.add_arguments(groups.add_parser("sample", help="在线回放采集与共享练习主机"))
     screens = groups.add_parser("screen", help="分阶段筛选并独立验收").add_subparsers(dest="op", required=True)
     screen = screens.add_parser("start")
     screen.add_argument("--candidates", required=True)
@@ -128,6 +129,9 @@ def parser():
 
 
 def execute(root, args):
+    if args.group == "sample":
+        from . import sampling
+        return sampling.dispatch(root, args)
     if args.group == "screen":
         from . import screening
         if args.op == "status":
@@ -238,9 +242,11 @@ def execute(root, args):
         if op == "submit":
             return online.submit(root, args.identifier, version=args.version, note=args.note)
         if op == "practice":
-            return online.practice(root, args.identifier, games=args.games, seed=args.seed, level=args.level)
+            from . import practice_host
+            return practice_host.practice(root, args.identifier, games=args.games, seed=args.seed, level=args.level)
         if op == "replay":
-            return online.replay(root, args.match_id)
+            from . import practice_host
+            return practice_host.replay(root, args.match_id)
         return getattr(online, op)(root, *([] if op == "matches" else [args.identifier]))
     raise ValueError(f"未知命令 {group}")
 

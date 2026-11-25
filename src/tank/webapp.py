@@ -175,7 +175,7 @@ class Handler(BaseHTTPRequestHandler):
             argv = payload["args"]
             if not isinstance(argv, list) or not argv or not all(isinstance(v,str) for v in argv):
                 raise ValueError("args 须为命令参数列表")
-            if argv[0] in ("check", "web", "lan", "screen") or argv[:2] in (["eval","import"], ["eval","export"]):
+            if argv[0] in ("check", "web", "lan", "screen", "sample") or argv[:2] in (["eval","import"], ["eval","export"]):
                 raise ValueError("此操作请通过 CLI 运行")
             data = execute(self.server.root, parser().parse_args(argv))
             self._reply({"data":data})
