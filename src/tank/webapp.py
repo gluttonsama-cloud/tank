@@ -1,4 +1,5 @@
 import json
+import re
 import sqlite3
 import threading
 import time
@@ -112,19 +113,40 @@ class Handler(BaseHTTPRequestHandler):
                 return self._reply(overview(root) | {"account_username": (online.account(root) or {}).get("username"), "team_sync": dict(self.server.team_sync),
                                                      "sync_error": self.server.sync_error,
                                                      "score_sync_running": self.server.sync_running})
+            if url.path == "/api/online/practice":
+                query = parse_qs(url.query)
+                if "version" not in query:
+                    raise ValueError("缺少参数 version")
+                return self._reply(online.history(root, query["version"][0]))
             if url.path == "/replay":
-                case = parse_qs(url.query)["case"][0]
-                path = evaluation.replay(root, case)["replay_path"]
-                with self.server.guard:
-                    index = len(self.server.replays) + 1
-                    self.server.replays[index] = Path(path)
+                query = parse_qs(url.query, keep_blank_values=True)
+                if "online" in query:
+                    match_id = query["online"][0]
+                    if not re.fullmatch(r"[1-9][0-9]*", match_id):
+                        raise ValueError("官网对局 ID 需为正整数")
+                    # The SDK player requires a numeric URL. A leading zero separates
+                    # stable official match IDs from the per-process local replay IDs.
+                    index = f"0{match_id}"
+                else:
+                    case = query["case"][0]
+                    path = evaluation.replay(root, case)["replay_path"]
+                    with self.server.guard:
+                        index = len(self.server.replays) + 1
+                        self.server.replays[index] = Path(path)
                 self.send_response(303)
                 self.send_header("Location", f"/replay/{index}")
                 self.end_headers()
                 return
             if url.path.startswith("/api/replays/"):
                 from seedcup.game.replay import load
-                return self._reply(load(self.server.replays[int(url.path.rsplit("/",1)[1])]))
+                index = url.path.removeprefix("/api/replays/")
+                if re.fullmatch(r"0[1-9][0-9]*", index):
+                    path = online.practice_replay_path(root, int(index[1:]))
+                    if not path.is_file():
+                        return self._reply({"detail": "本机未找到这场官网练习回放"}, status=404)
+                else:
+                    path = self.server.replays[int(index)]
+                return self._reply(load(path))
             if url.path.startswith("/replay/") and url.path[8:].isdigit():
                 file = WEB / "replay.html"
             elif url.path.startswith("/static/"):

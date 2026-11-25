@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "rules": "2.6-prelim",
+  "seed": 2026,
+  "epochs": 36,
+  "source_sha256": {
+    "fit_boss_sparring.py": "febd5cd2cd1693a22dc7d7716a3155c8e1e04b7eee2aeac259ddcd3abbcb0b44",
+    "boss_sparring_policy.py": "e75a90d312b10dc6eafb9f331f3684dd0ed3c03fa8e6aa78e737fa68e56787c9"
+  },
+  "train": [
+    {
+      "id": 14053,
+      "seed": 1200500144,
+      "sha256": "74d03b58904c2420d748389bbf27c135e0e8180bf15a0a62d59de49e2a9146d3"
+    },
+    {
+      "id": 14093,
+      "seed": 8911,
+      "sha256": "7c25b1570ba45da804fb64fab4070275ceb08bd40a6051774fd70854a2e2336e"
+    },
+    {
+      "id": 14096,
+      "seed": 8911,
+      "sha256": "a58c57c5cd11095fb89ff0bd02696c54f4d614aa0e05dd99b984953f5c086811"
+    },
+    {
+      "id": 14102,
+      "seed": 8911,
+      "sha256": "0d4fb2db516a566193b3b0be8c8c9fdfdea2329da05f3c6fd0ae47e06bfe02b6"
+    },
+    {
+      "id": 14117,
+      "seed": 8911,
+      "sha256": "579771f1846fd80909e13b2d1bf26ec4ec943ddf262aaa061213898e167c25f4"
+    },
+    {
+      "id": 14132,
+      "seed": 8911,
+      "sha256": "159643d80b017fe3120b7d80a5ffeb650147248a321f24b1863aa665fa61a8c0"
+    },
+    {
+      "id": 14149,
+      "seed": 8911,
+      "sha256": "c6a73bb292f9a12fc8d4ce91e830ee2df1dd867c03a6c36b44d6c89faa143dd7"
+    },
+    {
+      "id": 14163,
+      "seed": 1200500144,
+      "sha256": "b7d7f73e76739da0c3d6adf80a32f17c624f68e5f7ec11330afce867223dbf04"
+    },
+    {
+      "id": 14168,
+      "seed": 1200500144,
+      "sha256": "34c97b8ce128cf3d16fca72b76c47ac3414e67fe286c2e6c21ab1ac965b82a91"
+    },
+    {
+      "id": 14180,
+      "seed": 34729,
+      "sha256": "6ad6c7a1c95bb20382a2473d8edfaf0888c7d365cb97b04818ef301223db5984"
+    },
+    {
+      "id": 14184,
+      "seed": 34729,
+      "sha256": "f6283bcc5ec43b5ebb3a594968e83ed7755d1a393f7e9b3e977b76602d02ce32"
+    }
+  ],
+  "holdout": [
+    {
+      "id": 14187,
+      "seed": 96671,
+      "sha256": "ac4ea10ba25f6f8796de514cbdd96f6b0c40fa6bc43aa4965e619ec0b483ec36"
+    },
+    {
+      "id": 14200,
+      "seed": 96671,
+      "sha256": "cc7aa26c11136cf491c3700c47beb65362f8909519220f6800804b29ccce6b1e"
+    }
+  ],
+  "metrics": {
+    "train": {
+      "frames": 6325,
+      "forward_labels": 6151,
+      "fire_labels": 1431,
+      "forward_accuracy": 0.7018370996585921,
+      "turn_mae": 0.44594916701316833,
+      "observed_shots": 355,
+      "predicted_shots": 354,
+      "fire_precision": 0.9717514124293786,
+      "fire_recall": 0.9690140845070423
+    },
+    "holdout": {
+      "frames": 1667,
+      "forward_labels": 1315,
+      "fire_labels": 631,
+      "forward_accuracy": 0.6425855513307985,
+      "turn_mae": 0.5850582122802734,
+      "observed_shots": 74,
+      "predicted_shots": 78,
+      "fire_precision": 0.8461538461538461,
+      "fire_recall": 0.8918918918918919
+    },
+    "holdout_by_replay": {
+      "14187": {
+        "frames": 850,
+        "forward_labels": 658,
+        "fire_labels": 346,
+        "forward_accuracy": 0.6458966565349544,
+        "turn_mae": 0.6042039394378662,
+        "observed_shots": 36,
+        "predicted_shots": 39,
+        "fire_precision": 0.7692307692307693,
+        "fire_recall": 0.8333333333333334
+      },
+      "14200": {
+        "frames": 817,
+        "forward_labels": 657,
+        "fire_labels": 285,
+        "forward_accuracy": 0.639269406392694,
+        "turn_mae": 0.5651389956474304,
+        "observed_shots": 38,
+        "predicted_shots": 39,
+        "fire_precision": 0.9230769230769231,
+        "fire_recall": 0.9473684210526315
+      }
+    }
+  }
+}

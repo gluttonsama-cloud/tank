@@ -10,6 +10,7 @@ const state = {
     poll: null,
     strategyPoll: null,
     strategyRequest: 0,
+    practiceHistoryRequest: 0,
     projectsView: "",
     historyConditions: new Map(),
     trainingView: "",
@@ -376,8 +377,11 @@ function versionPicker(projectId, versionId, groups, preferred) {
 }
 
 function renderOnlineVersions() {
+    const previous = $("online-version").value;
     versionPicker("online-project", "online-version", versionGroups(false));
-    for (const button of document.querySelectorAll("[data-online]")) button.disabled = !$("online-version").value;
+    const selected = $("online-version").value;
+    for (const button of document.querySelectorAll("[data-online]")) button.disabled = !selected;
+    if (selected !== previous) void refreshPracticeHistory();
 }
 
 function selectedCandidates() {
@@ -698,6 +702,44 @@ function applyPage(fresh = false) {
     }
 }
 
+function replayLink(text, url) {
+    const link = element("a", text);
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener";
+    return link;
+}
+
+async function refreshPracticeHistory() {
+    const token = ++state.practiceHistoryRequest;
+    const isOpen = () => $("official-operations").open && $("practice-history").open;
+    if (!isOpen()) return;
+    const body = $("practice-history-rows");
+    const version = $("online-version").value;
+    if (!version) {
+        emptyTable(body, 3, "请选择策略版本");
+        return;
+    }
+    emptyTable(body, 3, "正在读取…");
+    try {
+        const matches = await request(`/api/online/practice?version=${encodeURIComponent(version)}`);
+        if (token !== state.practiceHistoryRequest || !isOpen()) return;
+        if (!matches.length) {
+            emptyTable(body, 3, "暂无练习记录");
+            return;
+        }
+        const levels = { rookie: "入门", mid: "基础", strong: "进阶", boss: "终极" };
+        body.replaceChildren();
+        for (const match of matches) {
+            const label = match.replay_saved ? "播放" : "官网回放";
+            addRow(body, [levels[match.level], score.format(match.score),
+                replayLink(`${label} #${match.id}`, match.replay_url)]);
+        }
+    } catch (error) {
+        if (token === state.practiceHistoryRequest && isOpen()) emptyTable(body, 3, error.message);
+    }
+}
+
 function showOnline(op, data) {
     const output = $("online-output");
     output.replaceChildren();
@@ -705,15 +747,30 @@ function showOnline(op, data) {
     if (op === "practice") {
         output.append(element("p", `房间 ${data.room} · 已完成 ${data.matches.length} 局`));
         for (const [index, match] of data.matches.entries()) {
-            const link = element("a", `第 ${index + 1} 局回放`);
-            link.href = match.replay_url;
-            link.target = "_blank";
-            link.rel = "noopener";
+            const localReplay = `/replay?online=${match.id}`;
+            const link = replayLink(`第 ${index + 1} 局回放`, match.replay_path ? localReplay : match.replay_url);
             const row = element("p", `我方 ${score.format(match.score)} 分 · `);
             row.append(link);
             output.append(row);
+            if (match.replay_error) {
+                const retry = element("button", "重试下载");
+                retry.type = "button";
+                const status = element("span", match.replay_error + " ", "failure");
+                row.append(" · ", status, retry);
+                retry.addEventListener("click", () => void withButton(retry, async () => {
+                    await command("online", "replay", String(match.id));
+                    link.href = localReplay;
+                    status.classList.remove("failure");
+                    status.textContent = "回放已保存";
+                    retry.remove();
+                    void refreshPracticeHistory();
+                }));
+            } else if (match.replay_path) {
+                row.append(" · 回放已保存");
+            }
         }
         if (data.close_error) output.append(element("p", data.close_error, "failure"));
+        void refreshPracticeHistory();
     }
     if (op === "submit" || op === "status") {
         $("submission-id").value = data.id;
@@ -728,6 +785,9 @@ function showOnline(op, data) {
 }
 
 $("online-project").addEventListener("change", renderOnlineVersions);
+$("online-version").addEventListener("change", () => void refreshPracticeHistory());
+$("official-operations").addEventListener("toggle", () => void refreshPracticeHistory());
+$("practice-history").addEventListener("toggle", () => void refreshPracticeHistory());
 
 $("test-form").addEventListener("change", (event) => {
     if (event.target === $("baseline") || event.target === $("baseline-project")) renderTestSetup(false);

@@ -1,11 +1,16 @@
+import gzip
 import hashlib
 import json
 from pathlib import Path
+from threading import Thread
+from urllib.request import urlopen
 from zipfile import ZipFile
 
 import pytest
 
 from tank import online, versions
+from tank.cli import execute, parser
+from tank.webapp import WorkbenchHTTP
 from tank.workspace import read_json, write_json
 
 
@@ -134,32 +139,166 @@ class _MockSocket:
         self.sent.append(json.loads(message))
 
 
-@pytest.mark.parametrize("level", online.PRACTICE_LEVELS)
-def test_practice_runs_room_and_closes_without_reconnect(tmp_path, monkeypatch, level):
-    key = _snapshot(tmp_path, BOT)
-    team = {"id": 8}
-    result = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
-    socket = _MockSocket([
-        {"type": "welcome", "team": team},
-        {"type": "match_start", "kind": "room", "match_id": 100, "side": "blue"},
+def _replay_payload(level, result):
+    return {
+        "format": online.FORMAT_VERSION,
+        "match": {
+            "id": 100, "kind": "room", "room": "AB12CD",
+            "red": {"id": None, "name": online.PRACTICE_NAMES[level], "bot": True},
+            "blue": {"id": 8, "name": "Team", "bot": False},
+        },
+        "map": {"seed": 42},
+        "frames": [[0]],
+        "result": result,
+    }
+
+
+def _practice_socket(level, result):
+    return _MockSocket([
+        {"type": "welcome", "team": {"id": 8}},
+        {"type": "match_start", "kind": "room", "match_id": 100, "side": "blue",
+         "opponent": online.PRACTICE_NAMES[level], "map": {"seed": 42}},
         {"type": "obs", "frame": 0, "match_id": 100},
         {"type": "match_end", "match_id": 100, "result": result},
     ])
+
+
+@pytest.mark.parametrize("level", online.PRACTICE_LEVELS)
+def test_practice_runs_room_and_closes_without_reconnect(tmp_path, monkeypatch, level):
+    key = _snapshot(tmp_path, BOT)
+    result = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
+    socket = _practice_socket(level, result)
     monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: socket)
-    client = _MockClient([{"code": "AB12CD"}, {"ok": True}, {"ok": True}])
+    payload = _replay_payload(level, result)
+    raw = gzip.compress(json.dumps(payload).encode())
+    pending = [online.RemoteError(404, "回放还在生成，稍后再试")] if level == "rookie" else []
+    client = _MockClient([{"code": "AB12CD"}, {"ok": True}, {"ok": True}, *pending, raw])
 
     progress = online.practice(tmp_path, key, client=client, level=level)
     assert client.requests[0][2]["fields"]["level"] == level
     record = read_json(tmp_path / ".local/online/practice" / key / level / "100.json")
     assert record["score"] == 20 and record["level"] == level
+    assert record["version_id"] == key and record["side"] == "blue" and record["map_seed"] == 42
 
     assert progress["matches"][0]["result"] == result
     assert progress["matches"][0]["replay_url"].endswith("/replay/100")
+    replay_path = tmp_path / ".local/online/replays/100.json.gz"
+    assert record["replay_path"] == progress["matches"][0]["replay_path"] == str(replay_path)
+    assert replay_path.read_bytes() == raw
     assert [path for _, path, _ in client.requests] == [
         online.ROOMS, f"{online.ROOMS}/AB12CD/start", f"{online.ROOMS}/AB12CD/close",
+        *(["/api/replays/100"] * (len(pending) + 1)),
     ]
+    assert client.requests[-1] == ("GET", "/api/replays/100", {"compressed": True})
     assert socket.sent[1] == {"type": "action", "match_id": 100, "frame": 0,
                               "forward": 0.0, "turn": 0.0, "fire": False}
+
+
+def test_replay_failure_keeps_score_and_can_retry_from_cli(tmp_path, monkeypatch):
+    key = _snapshot(tmp_path, BOT)
+    result = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
+    socket = _practice_socket("boss", result)
+    monkeypatch.setattr(online.websockets, "connect", lambda *args, **kwargs: socket)
+    client = _MockClient([{"code": "AB12CD"}, {"ok": True}, {"ok": True}, online.RequestUncertain("超时")])
+
+    record = online.practice(tmp_path, key, client=client, level="boss")["matches"][0]
+
+    assert record["score"] == 20 and record["replay_error"] == "超时"
+    path = tmp_path / ".local/online/practice" / key / "boss/100.json"
+    saved = read_json(path)
+    assert saved["result"] == result and "replay_error" not in saved and "replay_path" not in saved
+
+    # Older workbench records did not include team, room or resolved map seed.
+    for name in ("team_id", "room", "map_seed", "opponent"):
+        del saved[name]
+    write_json(path, saved)
+    cache = versions.snapshot_data(tmp_path, key) / "__pycache__"
+    cache.mkdir()
+    (cache / "bot.cpython-312.pyc").write_bytes(b"runtime cache from an older practice")
+    raw = gzip.compress(json.dumps(_replay_payload("boss", result)).encode())
+    monkeypatch.setattr(online.OnlineClient, "login", lambda root: _MockClient([raw]))
+    imported = execute(tmp_path, parser().parse_args(["online", "replay", "100", "--json"]))
+    assert imported["team_id"] == 8 and imported["version_id"] == key
+    assert Path(imported["replay_path"]).read_bytes() == raw
+    assert read_json(path) == imported
+
+
+@pytest.mark.parametrize(("field", "value", "error"), [
+    ("id", 101, "不一致"),
+    ("kind", "ladder", "不一致"),
+    ("room", "ZX98YZ", "不一致"),
+    ("blue", {"id": 99, "bot": False}, "出生侧"),
+    ("red", {"id": 9, "bot": False, "name": online.PRACTICE_NAMES["boss"]}, "练习对手"),
+    ("red", {"id": None, "bot": True, "name": online.PRACTICE_NAMES["strong"]}, "练习对手"),
+])
+def test_replay_rejects_mismatched_official_match(tmp_path, field, value, error):
+    key = _snapshot(tmp_path, BOT)
+    result = {"winner": 0, "scores": [{"total": 100}, {"total": 20}]}
+    path = tmp_path / ".local/online/practice" / key / "boss/100.json"
+    record = {"id": 100, "version_id": key, "level": "boss", "side": "blue",
+              "score": 20, "result": result, "seed": 42, "room": "AB12CD", "team_id": 8}
+    write_json(path, record)
+    payload = _replay_payload("boss", result)
+    payload["match"][field] = value
+    client = _MockClient([gzip.compress(json.dumps(payload).encode())])
+
+    with pytest.raises(online.OnlineError, match=error):
+        online.replay(tmp_path, 100, client=client)
+    assert not (tmp_path / ".local/online/replays/100.json.gz").exists()
+    assert read_json(path) == record
+
+
+def test_practice_history_uses_selected_version_and_most_recent_ids(tmp_path, monkeypatch):
+    version = f"v-{'a' * 64}"
+    other = f"v-{'b' * 64}"
+    for match_id in range(94, 106):
+        level = "boss" if match_id % 2 else "rookie"
+        write_json(online._practice_path(tmp_path, {"id": match_id, "level": level, "version_id": version}),
+                   {"id": match_id, "level": level, "version_id": version, "score": 46.4})
+    write_json(tmp_path / ".local/online/practice" / other / "strong/120.json",
+               {"id": 120, "level": "strong", "version_id": other, "score": 100})
+    archived = online.practice_replay_path(tmp_path, 104)
+    archived.parent.mkdir(parents=True)
+    archived.touch()
+    monkeypatch.setattr(online.OnlineClient, "login", lambda root: pytest.fail("history must be offline"))
+
+    matches = execute(tmp_path, parser().parse_args(["online", "history", version, "--json"]))
+    assert [match["id"] for match in matches] == list(range(105, 95, -1))
+    assert matches[0]["replay_url"] == f"{online.SITE}/replay/105"
+    assert matches[1] == {"id": 104, "level": "rookie", "score": 46.4, "replay_saved": True,
+                          "replay_url": "/replay?online=104"}
+    assert [match["id"] for match in online.history(tmp_path, other)] == [120]
+    with pytest.raises(online.OnlineError, match="快照 ID"):
+        online.history(tmp_path, "../other")
+
+
+def test_official_replay_viewer_keeps_stable_url_after_restart(tmp_path, monkeypatch):
+    official = online.practice_replay_path(tmp_path, 1)
+    official.parent.mkdir(parents=True)
+    official.write_bytes(gzip.compress(b'{"match":{"id":1},"frames":[[0]]}'))
+    local = tmp_path / "local.json"
+    write_json(local, {"match": {"id": "local"}})
+    monkeypatch.setattr("tank.webapp.evaluation.replay", lambda root, case: {"replay_path": local})
+
+    for restart in (False, True):
+        with WorkbenchHTTP(("127.0.0.1", 0), tmp_path) as server:
+            worker = Thread(target=server.serve_forever, daemon=True)
+            worker.start()
+            base = f"http://127.0.0.1:{server.server_port}"
+            try:
+                if not restart:
+                    with urlopen(base + "/replay?case=local-case", timeout=5) as response:
+                        assert response.url == base + "/replay/1"
+                    with urlopen(base + "/api/replays/1", timeout=5) as response:
+                        assert json.load(response)["match"]["id"] == "local"
+                with urlopen(base + "/replay?online=1", timeout=5) as response:
+                    assert response.url == base + "/replay/01"
+                    assert b"/static/replay.js" in response.read()
+                with urlopen(base + "/api/replays/01", timeout=5) as response:
+                    assert json.load(response)["match"]["id"] == 1
+            finally:
+                server.shutdown()
+                worker.join()
 
 
 def test_practice_stops_when_connection_is_replaced(tmp_path, monkeypatch):

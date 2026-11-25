@@ -37,7 +37,7 @@ def parser():
         "eval": ("estimate", "start", "list", "status", "compare", "cases", "cancel", "resume",
                  "retry", "share-retry", "reproduce", "replay", "logs", "export", "import"),
         "sync": ("publish", "restore", "list", "fetch"),
-        "online": ("pack", "practice", "submit", "status", "matches", "refresh"),
+        "online": ("pack", "practice", "history", "replay", "submit", "status", "matches", "refresh"),
         "project": ("list",),
         "training": ("collect", "list"),
     }
@@ -104,7 +104,12 @@ def parser():
                     cmd.add_argument("--seeds", required=True, help="地图种子，以逗号分隔")
                     cmd.add_argument("--repeats", type=int, default=1)
             elif group == "online" and op not in ("matches", "refresh"):
-                cmd.add_argument("identifier")
+                if op == "replay":
+                    cmd.add_argument("match_id", type=int, help="已在本机完成的官网练习对局 ID")
+                elif op == "history":
+                    cmd.add_argument("identifier", metavar="version_id", help="列出该版本在本机的最近 10 场官网练习")
+                else:
+                    cmd.add_argument("identifier")
                 if op == "submit":
                     cmd.add_argument("--version")
                     cmd.add_argument("--note", default="")
@@ -234,6 +239,8 @@ def execute(root, args):
             return online.submit(root, args.identifier, version=args.version, note=args.note)
         if op == "practice":
             return online.practice(root, args.identifier, games=args.games, seed=args.seed, level=args.level)
+        if op == "replay":
+            return online.replay(root, args.match_id)
         return getattr(online, op)(root, *([] if op == "matches" else [args.identifier]))
     raise ValueError(f"未知命令 {group}")
 

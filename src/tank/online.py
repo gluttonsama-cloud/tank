@@ -2,6 +2,7 @@
 
 import asyncio
 import getpass
+import gzip
 import hashlib
 import importlib.metadata
 import io
@@ -14,16 +15,20 @@ import sys
 import tempfile
 import time
 import unicodedata
+from http.client import IncompleteRead
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from uuid import uuid4
 from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile, ZipInfo
+from zlib import error as ZlibError
 
 import websockets
 from seedcup.game import Game, generate_map, parse_action
 from seedcup.game.bots import make_bot
+from seedcup.game.replay import FORMAT_VERSION
 from seedcup.game.runner import match_info
 from seedcup.server.evaluation_manifest import manifest
+from seedcup.server.hub import PRACTICE_NAMES
 
 from . import versions
 from .eval_plan import SCORE_ITEMS
@@ -100,7 +105,7 @@ class OnlineClient:
             raise OnlineError("请在「策略 → 官网操作 → 比赛账号」填写账号")
         return cls(**credentials)
 
-    def request(self, method: str, path: str, *, fields=None, body=None, content_type=None):
+    def request(self, method: str, path: str, *, fields=None, body=None, content_type=None, compressed=False):
         headers = {"Accept": "application/json"}
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"
@@ -112,7 +117,7 @@ class OnlineClient:
         request = Request(SITE + path, data=body, headers=headers, method=method)
         try:
             with self.opener.open(request, timeout=15) as response:
-                return json.load(response)
+                return response.read() if compressed else json.load(response)
         except HTTPError as error:
             if error.code >= 500:
                 raise RequestUncertain(f"官网暂时不可用（HTTP {error.code}）") from None
@@ -123,7 +128,7 @@ class OnlineClient:
             if not isinstance(detail, str):
                 detail = f"官网请求失败（HTTP {error.code}）"
             raise RemoteError(error.code, detail) from None
-        except (URLError, OSError, json.JSONDecodeError) as error:
+        except (URLError, OSError, IncompleteRead, UnicodeError, json.JSONDecodeError) as error:
             raise RequestUncertain(f"未收到完整官网响应（{type(error).__name__}）") from None
 
 
@@ -498,21 +503,138 @@ async def _receive(ws, timeout=20) -> dict:
     return message
 
 
-PRACTICE_LEVELS = ("rookie", "mid", "strong", "boss")
+PRACTICE_LEVELS = tuple(PRACTICE_NAMES)
 
 
-async def _room_matches(root, source, version_id, ws, games, level, seed):
-    completed = []
+def _practice_path(root: Path, record: dict) -> Path:
+    return root / ".local/online/practice" / record["version_id"] / record["level"] / f"{record['id']}.json"
+
+
+def practice_replay_path(root: Path, match_id: int) -> Path:
+    return root / ".local/online/replays" / f"{match_id}.json.gz"
+
+
+def _read_practice_record(path: Path) -> dict:
+    match_id = int(path.stem)
+    record = read_json(path)
+    if (not isinstance(record, dict) or record.get("id") != match_id or record.get("level") != path.parent.name
+            or record.get("version_id") != path.parent.parent.name or record["level"] not in PRACTICE_LEVELS):
+        raise OnlineError(f"对局 {match_id} 的本机练习记录与快照或档位不一致")
+    return record
+
+
+def history(root: Path, version_id: str) -> list[dict]:
+    """Return the ten most recent local practice matches for a snapshot."""
+    if not re.fullmatch(r"v-[0-9a-f]{64}", version_id):
+        raise OnlineError("策略快照 ID 无效")
+    directory = root / ".local/online/practice" / version_id
+    paths = (path for level in PRACTICE_LEVELS for path in (directory / level).glob("*.json"))
+    recent = sorted(paths, key=lambda path: int(path.stem), reverse=True)[:10]
+    matches = []
+    for path in recent:
+        record = _read_practice_record(path)
+        match_id = record["id"]
+        if not _score_number(record.get("score")):
+            raise OnlineError(f"对局 {match_id} 的本机练习记录的 score 缺失或无效")
+        saved = practice_replay_path(root, match_id).is_file()
+        url = f"/replay?online={match_id}" if saved else f"{SITE}/replay/{match_id}"
+        matches.append({"id": match_id, "level": record["level"], "score": record["score"],
+                        "replay_saved": saved, "replay_url": url})
+    return matches
+
+
+def _archive_practice_replay(root: Path, client: OnlineClient, record: dict, *, retry_pending=False) -> dict:
+    match_id = record["id"]
+    side = record.get("side")
+    if side not in ("red", "blue"):
+        raise OnlineError("本机练习记录的 side 无效")
+    team_id = client.user["id"]
+    if record.get("team_id", team_id) != team_id:
+        raise OnlineError(f"练习对局 {match_id} 属于另一支队伍")
+    opposite = "red" if side == "blue" else "blue"
+    endpoint = f"/api/replays/{match_id}"
+    try:
+        raw = client.request("GET", endpoint, compressed=True)
+    except RemoteError as error:
+        if not retry_pending or error.status != 404 or str(error) != "回放还在生成，稍后再试":
+            raise
+        # The server saves replays asynchronously after sending match_end.
+        time.sleep(0.5)
+        raw = client.request("GET", endpoint, compressed=True)
+    try:
+        data = json.loads(gzip.decompress(raw))
+    except (OSError, EOFError, ZlibError, UnicodeError, json.JSONDecodeError):
+        raise OnlineError(f"对局 {match_id} 的官网回放无法解压或解析") from None
+    try:
+        match = data["match"]
+        own, opponent = match[side], match[opposite]
+        room = match["room"]
+        map_seed = data["map"]["seed"]
+        if data["format"] != FORMAT_VERSION or not isinstance(data["frames"], list) or not data["frames"]:
+            raise OnlineError(f"对局 {match_id} 的官网回放格式无效")
+        if (match["id"] != match_id or match["kind"] != "room" or not isinstance(room, str)
+                or not re.fullmatch(r"[A-Z0-9]{6}", room) or room != record.get("room", room)):
+            raise OnlineError(f"官网回放与本机练习房对局 {match_id} 不一致")
+        if own["id"] != team_id or own["bot"] is not False:
+            raise OnlineError(f"官网回放中对局 {match_id} 的队伍或出生侧不匹配")
+        if (opponent["id"] is not None or opponent["bot"] is not True
+                or opponent["name"] != PRACTICE_NAMES[record["level"]]):
+            raise OnlineError(f"官网回放中对局 {match_id} 的练习对手不匹配")
+        seeds = (record["seed"], record.get("map_seed"))
+        if type(map_seed) is not int or any(seed is not None and seed != map_seed for seed in seeds):
+            raise OnlineError(f"官网回放中对局 {match_id} 的地图种子不匹配")
+        result = data["result"]
+        score = result["scores"][("red", "blue").index(side)]["total"]
+        if result != record["result"] or score != record["score"]:
+            raise OnlineError(f"官网回放中对局 {match_id} 的练习成绩不匹配")
+    except KeyError as error:
+        raise OnlineError(f"回放或本机练习记录缺少字段 {error.args[0]}") from None
+    except (TypeError, IndexError):
+        raise OnlineError(f"对局 {match_id} 的回放或本机练习记录格式无效") from None
+
+    path = practice_replay_path(root, match_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=path.parent) as directory:
+        staged = Path(directory) / path.name
+        staged.write_bytes(raw)
+        staged.replace(path)
+    archived = record | {"team_id": team_id, "room": room, "map_seed": map_seed,
+                         "opponent": opponent["name"], "replay_path": str(path)}
+    write_json(_practice_path(root, archived), archived)
+    return archived
+
+
+def replay(root: Path, match_id: int, *, client=None) -> dict:
+    """Download the official replay for a match recorded by local practice."""
+    if type(match_id) is not int or match_id < 1:
+        raise OnlineError("官网对局 ID 需为正整数")
+    paths = list((root / ".local/online/practice").glob(f"*/*/{match_id}.json"))
+    if len(paths) != 1:
+        reason = "存在多条本机练习记录" if paths else "找不到本机练习记录"
+        raise OnlineError(f"对局 {match_id} {reason}")
+    record = _read_practice_record(paths[0])
+    version_id = record["version_id"]
+    if versions.describe(root, version_id).get("id") != version_id:
+        raise OnlineError(f"对局 {match_id} 的本机练习记录与快照清单的 id 不一致")
+    client = client if client is not None else OnlineClient.login(root)
+    return _archive_practice_replay(root, client, record)
+
+
+async def _room_matches(root, source, ws, games, practice_info, completed):
     bot = None
     match_id = None
+    opponent = PRACTICE_NAMES[practice_info["level"]]
     try:
         while len(completed) < games:
             message = await _receive(ws)
             kind = message["type"]
             if kind == "match_start" and message["kind"] == "room":
-                bot = ProcessBot(root, source, version_id, match_seconds=None)
+                if message["opponent"] != opponent:
+                    raise OnlineError("在线练习连接到了其他对手")
+                bot = ProcessBot(root, source, practice_info["version_id"], match_seconds=None)
                 match_id = message["match_id"]
                 side = message["side"]
+                map_seed = message["map"]["seed"]
                 await asyncio.to_thread(bot.on_match_start, message)
             elif match_id is not None and message.get("match_id") == match_id:
                 if kind == "obs":
@@ -524,11 +646,12 @@ async def _room_matches(root, source, version_id, ws, games, level, seed):
                                               "frame": message["frame"], **action}))
                 elif kind == "match_end":
                     await asyncio.to_thread(bot.on_match_end, message["result"])
-                    record = {"id": match_id, "result": message["result"], "side": side,
-                              "score": message["result"]["scores"][("red", "blue").index(side)]["total"],
-                              "level": level, "version_id": version_id, "seed": seed,
-                              "replay_url": f"{SITE}/replay/{match_id}"}
-                    write_json(root / ".local/online/practice" / version_id / level / f"{match_id}.json", record)
+                    record = practice_info | {
+                        "id": match_id, "result": message["result"], "side": side,
+                        "score": message["result"]["scores"][("red", "blue").index(side)]["total"],
+                        "map_seed": map_seed, "opponent": opponent, "replay_url": f"{SITE}/replay/{match_id}",
+                    }
+                    write_json(_practice_path(root, record), record)
                     completed.append(record)
                     bot = match_id = None
                 elif kind == "match_abort":
@@ -536,10 +659,9 @@ async def _room_matches(root, source, version_id, ws, games, level, seed):
     finally:
         if bot is not None:
             bot.close()
-    return completed
 
 
-async def _practice(root, version_id, client, games, seed, level):
+async def _practice(root, version_id, client, games, seed, level, completed):
     source = versions.snapshot_data(root, version_id)
     async with websockets.connect(SOCKET, open_timeout=10, max_size=2**20) as ws:
         await ws.send(json.dumps({"type": "login", "username": client.username,
@@ -553,11 +675,13 @@ async def _practice(root, version_id, client, games, seed, level):
         code = room["code"]
         if not re.fullmatch(r"[A-Z0-9]{6}", code):
             raise OnlineError("官网返回了无效的练习房间号")
+        practice_info = {"version_id": version_id, "level": level, "seed": seed,
+                         "room": code, "team_id": client.user["id"]}
         close_error = None
         try:
             await asyncio.to_thread(client.request, "POST", f"{ROOMS}/{code}/start")
             async with asyncio.timeout(games * 100 + 20):
-                completed = await _room_matches(root, source, version_id, ws, games, level, seed)
+                await _room_matches(root, source, ws, games, practice_info, completed)
         finally:
             try:
                 await asyncio.to_thread(client.request, "POST", f"{ROOMS}/{code}/close")
@@ -578,9 +702,17 @@ def practice(root: Path, version_id: str, *, client=None, games=1, seed=None, le
         raise OnlineError("地图种子需为 0 到 2147483647 的整数")
     versions.verify(root, version_id)
     client = client if client is not None else OnlineClient.login(root)
+    completed = []
     try:
-        return asyncio.run(_practice(root, version_id, client, games, seed, level))
+        result = asyncio.run(_practice(root, version_id, client, games, seed, level, completed))
     except TimeoutError:
         raise OnlineError("在线练习超时") from None
     except websockets.exceptions.WebSocketException:
         raise OnlineError("练习连接已断开，可稍后重试") from None
+    finally:
+        for index, record in enumerate(completed):
+            try:
+                completed[index] = _archive_practice_replay(root, client, record, retry_pending=True)
+            except (OnlineError, OSError) as error:
+                record["replay_error"] = str(error)
+    return result

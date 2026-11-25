@@ -3,7 +3,11 @@ from collections import deque
 from math import atan2, cos, degrees, hypot, radians, sin
 
 from seedcup import Bot
+from seedcup.game import rules
 from seedcup.game.bots import clear_shot, wall_grid
+
+
+ZONE_LOOKAHEAD = 30
 
 
 def angle(dx, dy):
@@ -31,6 +35,7 @@ class Lancer(Bot):
         self.route_goal = None
         self.distances = {}
         self.orbit = 1
+        self.retreating = False
 
     def waypoint(self, x, y, tx, ty):
         goal = int(tx), int(ty)
@@ -63,25 +68,34 @@ class Lancer(Bot):
                         return False
         return True
 
-    def evade(self, x, y, heading, preferred, speed, shells, zone):
+    def evade(self, x, y, heading, preferred, speed, shells, safe_center, frame):
         # Rank short movement arcs by clearance from the visible game projectiles.
         best = None
+        cx, cy = safe_center
+        radii = [rules.zone_radius(frame + tick) for tick in range(1, 9)]
+        already_outside = hypot(x-cx, y-cy) > radii[0]
+        future_radius = rules.zone_radius(frame + ZONE_LOOKAHEAD)
         for turn in (-1, -.5, 0, .5, 1, preferred):
             for forward in (-1, 1, 0):
                 px, py, h = x, y, heading
                 clearance = 3
-                for tick in range(1, 9):
+                zone_cost = 0
+                for tick, radius in enumerate(radii, 1):
                     h += turn*18
                     nx = px + forward*.25*cos(radians(h))
                     ny = py + forward*.25*sin(radians(h))
                     if self.free(nx, ny):
                         px, py = nx, ny
+                    if hypot(px-cx, py-cy) > radius:
+                        # Prefer an in-zone next step if one is possible.
+                        zone_cost += 26 if tick == 1 and not already_outside else .8
                     for sx, sy, vx, vy in shells:
                         along = clamp((px-sx)*vx + (py-sy)*vy - (tick-.5)*1.2, .6)
                         t = (tick-.5)*1.2 + along
                         clearance = min(clearance, hypot(px-sx-vx*t, py-sy-vy*t))
                 utility = (min(clearance, .95)*20 - abs(turn-preferred)*.24
-                           - abs(forward-speed)*.2 - max(0, hypot(px-16,py-12)-zone)*.8)
+                           - abs(forward-speed)*.2
+                           - zone_cost - max(0, hypot(px-cx, py-cy)-future_radius)*2)
                 if best is None or utility > best[0]:
                     best = utility, turn, forward
         return best[1:]
@@ -99,11 +113,14 @@ class Lancer(Bot):
             ax, ay = ex, ey
         bearing = angle(ax-x, ay-y)
         visible = clear_shot(self.walls, x, y, ax, ay)
-        zone = obs["zone"]["radius"]
-        escape = hypot(x-16, y-12) > zone-.4 and obs["frame"] > 380
+        zone = obs["zone"]
+        safe_center = zone["x"], zone["y"]
+        safe_radius = rules.zone_radius(obs["frame"] + ZONE_LOOKAHEAD)
+        margin = 1.1 if self.retreating else .6
+        self.retreating = hypot(x-safe_center[0], y-safe_center[1]) > safe_radius-margin
         cooldown = me["reload"]
-        if escape or not visible:
-            tx, ty = (16, 12) if escape else (ex, ey)
+        if self.retreating or not visible:
+            tx, ty = safe_center if self.retreating else (ex, ey)
             wx, wy = self.waypoint(x,y,tx,ty)
             target = angle(wx-x, wy-y)
             speed = min(1, hypot(wx-x,wy-y)*4)
@@ -130,6 +147,6 @@ class Lancer(Bot):
             if 0 < along < 10 and abs(dx*s["dy"]-dy*s["dx"]) < 1.1:
                 incoming.append((s["x"],s["y"],s["dx"],s["dy"]))
         if incoming:
-            turn, speed = self.evade(x,y,heading,turn,speed,incoming,zone)
+            turn, speed = self.evade(x,y,heading,turn,speed,incoming,safe_center,obs["frame"])
         fire = visible and abs(delta(bearing,heading+turn*18))*max(dist,1) < 24
         return {"forward": speed, "turn": turn, "fire": fire}

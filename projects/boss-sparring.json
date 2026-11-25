@@ -1,0 +1,6 @@
+{
+  "name": "终极档近似陪练",
+  "kind": "imitation",
+  "sources": ["boss-sparring"],
+  "training": ["fit_boss_sparring.py"]
+}
