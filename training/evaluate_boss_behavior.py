@@ -1,6 +1,8 @@
 """用真实回放做终极档短程行为验证，并在相同地图和出生侧复跑整局。"""
 
 import argparse
+import sys
+from contextlib import contextmanager
 from dataclasses import replace
 from math import cos, floor, hypot, radians, sin
 from pathlib import Path
@@ -16,10 +18,10 @@ from tank import versions
 from tank.workspace import project_root, read_json, write_json
 
 if __package__:
-    from .boss_behavior_matches import matched_games, rate, verify_unseen
+    from .boss_behavior_matches import MOVEMENT_START_DISTANCE, matched_games, rate, verify_unseen
     from .fit_boss_sparring import boss_side, recover_forward
 else:
-    from boss_behavior_matches import matched_games, rate, verify_unseen
+    from boss_behavior_matches import MOVEMENT_START_DISTANCE, matched_games, rate, verify_unseen
     from fit_boss_sparring import boss_side, recover_forward
 
 
@@ -228,7 +230,7 @@ def action_class(forward):
     return "forward" if forward > 0 else "reverse"
 
 
-def branch(trace, factory, start, horizons, events, history_frames):
+def branch(trace, factory, start, horizons, events, history_frames, *, idle_prefix_ticks=0):
     side, opposing = trace.side, 1 - trace.side
     bot = factory() if factory is not None else None
     if bot is not None:
@@ -249,6 +251,8 @@ def branch(trace, factory, start, horizons, events, history_frames):
                 if invalid:
                     raise ValueError(f"回放 {trace.meta['id']} 第 {tick} 帧出现无效预测动作")
                 actions[side] = action
+                if tick < idle_prefix_ticks:
+                    actions[side] = {"forward": 0., "turn": 0., "fire": False}
             if first is None:
                 first = actions[side]
             measure_hits = bool(events) and elapsed <= THREAT_TICKS
@@ -378,6 +382,37 @@ def evaluate_replays(traces, factory, stride_frames, history_frames):
     return summarize_trajectory(all_samples, all_events) | {"replays": summaries}
 
 
+@contextmanager
+def model_factory(root, model):
+    if model == "baseline":
+        yield load_bot(model)
+        return
+    versions.verify(root, model)
+    folder = versions.snapshot_data(root, model)
+    spec = read_json(folder / "submission.json")
+    path, _, name = spec["entrypoint"].partition(":")
+    if spec["runtime"] != "python" or not name:
+        raise ValueError(f"行为验证只支持类形式的 Python 模型快照 {model}")
+    entry = folder / path
+    # The SDK prepends the entrypoint directory. Its sibling imports must belong
+    # to this snapshot for the full run, including imports made by decide().
+    siblings = {p.stem for p in entry.parent.glob("*.py")}
+    siblings.update(p.name for p in entry.parent.iterdir() if (p / "__init__.py").is_file())
+
+    def sibling_modules():
+        return [key for key in sys.modules if key.partition(".")[0] in siblings]
+
+    old_path = sys.path[:]
+    previous = {key: sys.modules.pop(key) for key in sibling_modules()}
+    try:
+        yield load_bot(f"{entry}:{name}")
+    finally:
+        sys.path[:] = old_path
+        for key in sibling_modules():
+            del sys.modules[key]
+        sys.modules.update(previous)
+
+
 def trajectory_report(root, models, ids, stride_frames, history_frames, require_unseen=False, calibrate=False):
     if len(set(models)) != len(models) or len(set(ids)) != len(ids):
         raise ValueError("模型快照或官网回放 ID 重复")
@@ -392,19 +427,10 @@ def trajectory_report(root, models, ids, stride_frames, history_frames, require_
     traces = [ReplayTrace(replay) for replay in replays]
     reports = {}
     for model in models:
-        if model == "baseline":
-            factory = load_bot(model)
-        else:
-            versions.verify(root, model)
-            folder = versions.snapshot_data(root, model)
-            if require_unseen:
-                verify_unseen(root, model, replays)
-            spec = read_json(folder / "submission.json")
-            path, _, name = spec["entrypoint"].partition(":")
-            if spec["runtime"] != "python" or not name:
-                raise ValueError(f"行为验证只支持类形式的 Python 模型快照 {model}")
-            factory = load_bot(f"{folder / path}:{name}")
-        reports[model] = evaluate_replays(traces, factory, stride_frames, history_frames)
+        if require_unseen:
+            verify_unseen(root, model, replays)
+        with model_factory(root, model) as factory:
+            reports[model] = evaluate_replays(traces, factory, stride_frames, history_frames)
 
     report = {"rules": rules.as_dict()["version"], "ids": ids, "stride_frames": stride_frames,
             "history_frames": history_frames, "require_unseen": require_unseen,
@@ -419,9 +445,59 @@ def trajectory_report(root, models, ids, stride_frames, history_frames, require_
     return report
 
 
+def movement_window(root, replay_id, models, side, start, ticks, idle_prefix_ticks=0):
+    replay = load(root / ".local/online/replays" / f"{replay_id}.json.gz")
+    trace = ReplayTrace(replay)
+    if trace.meta["id"] != replay_id or not 0 <= start < trace.end or ticks <= 0:
+        raise ValueError("回放 ID 或验证窗口无效")
+    if not 0 <= idle_prefix_ticks <= min(ticks, trace.end) or (start and idle_prefix_ticks):
+        raise ValueError("空动作前缀只适用于从出生帧开始的窗口")
+    trace.side = SIDES.index(side)
+    end = min(start + ticks, trace.end)
+
+    def describe(points):
+        x0, y0 = points[0]
+        margins = [rules.zone_radius(start + i) - hypot(x - rules.ZONE_CX, y - rules.ZONE_CY)
+                   for i, (x, y) in enumerate(points)]
+        moving = next((i for i, (x, y) in enumerate(points)
+                       if hypot(x - x0, y - y0) > MOVEMENT_START_DISTANCE + 1e-12), None)
+        three_seconds = 3 * rules.TICK_HZ
+        return {"first_displacement_after_s": None if moving is None else moving * rules.DT,
+                "observed_s": (len(points) - 1) * rules.DT,
+                "displacement_at_3s_cells": (hypot(points[three_seconds][0] - x0, points[three_seconds][1] - y0)
+                                              if len(points) > three_seconds else None),
+                "outside_s": sum(m < 0 for m in margins[1:]) * rules.DT,
+                "final_margin_cells": margins[-1], "min_margin_cells": min(margins)}
+
+    frames = trace.frames[start:end + 1]
+    official = [f[trace.side + 1][:2] for f in frames]
+    result = {"id": replay_id, "side": side, "start_tick": start, "end_tick": end,
+              "opponent": "recorded_trajectory", "idle_prefix_ticks": idle_prefix_ticks,
+              "recorded": describe(official) | {"dead": not trace.tank(end, trace.side).alive}, "models": {}}
+    for model in models:
+        with model_factory(root, model) as factory:
+            rows, _ = branch(trace, factory, start, range(1, len(frames)), [], 20,
+                             idle_prefix_ticks=idle_prefix_ticks)
+        points = [official[0]]
+        for row in rows.values():
+            points.append(row["prediction_xy"])
+            if row["predicted_dead"]:
+                break
+        result["models"][model] = describe(points) | {"dead": row["predicted_dead"]}
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_subparsers(dest="mode", required=True)
+    window = modes.add_parser("movement-window", help="从指定回放状态重演本方走位，对手位置跟随记录")
+    window.add_argument("--id", required=True, type=int)
+    window.add_argument("--models", nargs="+", required=True)
+    window.add_argument("--side", choices=SIDES, required=True)
+    window.add_argument("--start", type=int, required=True, help="开始帧")
+    window.add_argument("--ticks", type=int, required=True)
+    window.add_argument("--idle-prefix-ticks", type=int, default=0, help="模拟开局动作延后生效的帧数")
+    window.add_argument("--output", type=Path, required=True)
     trajectories = modes.add_parser("trajectories", help="从官网回放中的相同状态分支")
     trajectories.add_argument("--models", nargs="+", required=True)
     trajectories.add_argument("--ids", nargs="+", type=int, required=True)
@@ -441,7 +517,9 @@ def main():
     compare.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     root = project_root()
-    if args.mode == "trajectories":
+    if args.mode == "movement-window":
+        report = movement_window(root, args.id, args.models, args.side, args.start, args.ticks, args.idle_prefix_ticks)
+    elif args.mode == "trajectories":
         report = trajectory_report(root, args.models, args.ids, args.stride_frames, args.history_frames,
                                    args.require_unseen, args.calibrate)
     else:

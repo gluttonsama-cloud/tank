@@ -305,7 +305,8 @@ def selected_ids(params, key):
 
 def load_splits(folder, request):
     params = request["params"]
-    if unknown := params.keys() - {"train_ids", "holdout_ids", "epochs", "policy", "range_weight", "balance_maps"}:
+    if unknown := params.keys() - {"train_ids", "holdout_ids", "epochs", "policy", "range_weight", "balance_maps",
+                                   "base_train_ids"}:
         raise ValueError(f"未知训练参数 {', '.join(sorted(unknown))}")
     train_ids, holdout_ids = selected_ids(params, "train_ids"), selected_ids(params, "holdout_ids")
     if set(train_ids) & set(holdout_ids):
@@ -337,8 +338,11 @@ def main(request_path):
     if type(epochs) is not int or not 1 <= epochs <= 200:
         raise ValueError("epochs 必须为 1 到 200 的整数")
     policy = request["params"].get("policy", "maneuver-evasion")
-    if policy not in ("legacy", "maneuver", "maneuver-evasion", "range-evasion"):
+    movement = policy in ("opening-imitation", "movement-imitation")
+    if not movement and policy not in ("legacy", "maneuver", "maneuver-evasion", "range-evasion"):
         raise ValueError("未知训练策略 " + str(policy))
+    if "base_train_ids" in request["params"] and not movement:
+        raise ValueError("base_train_ids 仅用于移动模仿")
     range_weight = request["params"].get("range_weight", 1.0)
     balance = request["params"].get("balance_maps", False)
     if type(balance) is not bool or (balance and policy != "range-evasion"):
@@ -349,7 +353,13 @@ def main(request_path):
     feature_type, fit = (Features, adam_fit) if policy == "legacy" else (ManeuverFeatures, fit_maneuvers)
     seed = request["config"]["sampling_seed"]
     train_xs, train_ys = zip(*(extract(replay, feature_type) for replay, _ in train))
-    train_x, train_y = np.concatenate(train_xs), np.concatenate(train_ys)
+    base_ids = (set(selected_ids(request["params"], "base_train_ids")) if movement
+                else {replay["match"]["id"] for replay, _ in train})
+    base_rows = [i for i, (replay, _) in enumerate(train) if replay["match"]["id"] in base_ids]
+    if len(base_rows) != len(base_ids):
+        raise ValueError("base_train_ids 必须属于 train_ids")
+    train_x = np.concatenate([train_xs[i] for i in base_rows])
+    train_y = np.concatenate([train_ys[i] for i in base_rows])
     if policy == "range-evasion":
         future = np.concatenate([future_range_changes(replay["frames"]) for replay, _ in train])
         frame_weights = (map_frame_weights([rep["map"]["grid"] for rep, _ in train], list(map(len, train_xs)))
@@ -358,7 +368,14 @@ def main(request_path):
                                 frame_weights=frame_weights)
     else:
         weights = fit(train_x, train_y, seed, epochs)
-    if policy in ("maneuver-evasion", "range-evasion"):
+    if movement:
+        if __package__:
+            from .boss_movement import fit_memory
+        else:
+            from boss_movement import fit_memory
+        phases = ["opening", "zone"] if policy == "movement-imitation" else ["opening"]
+        weights.update(fit_memory(list(zip(train_xs, train_ys, strict=True)), phases))
+    if movement or policy in ("maneuver-evasion", "range-evasion"):
         weights["evade_incoming"] = np.asarray(True)
     holdout_xs, holdout_ys = zip(*(extract(replay, feature_type) for replay, _ in holdout))
     record = {
@@ -370,16 +387,25 @@ def main(request_path):
     output = folder / request["output"]
     strategy = output / "strategy"
     strategy.mkdir()
-    shutil.copyfile(Path(__file__).with_name("boss_sparring_policy.py"), strategy / "bot.py")
+    policy_source = Path(__file__).with_name("boss_sparring_policy.py")
+    entrypoint = "bot.py:BossSparring"
+    if movement:
+        shutil.copyfile(policy_source, strategy / policy_source.name)
+        shutil.copyfile(Path(__file__).with_name("boss_movement.py"), strategy / "bot.py")
+        entrypoint = "bot.py:MovementSparring"
+    else:
+        shutil.copyfile(policy_source, strategy / "bot.py")
     np.savez(strategy / "weights.npz", **weights)
-    write_json(strategy / "submission.json", {"runtime": "python", "entrypoint": "bot.py:BossSparring"})
+    write_json(strategy / "submission.json", {"runtime": "python", "entrypoint": entrypoint})
     write_json(strategy / "training.json", {
         "schema_version": 2, "rules": rules.as_dict()["version"], "seed": seed, "epochs": epochs, "policy": policy,
-        "source_sha256": {name: request["sources"][name] for name in (
-            Path(__file__).name, "boss_sparring_policy.py")},
+        "source_sha256": {name: request["sources"][name] for name in
+                          [Path(__file__).name, policy_source.name] + (["boss_movement.py"] if movement else [])},
         "train": [replay_source(replay, digest) for replay, digest in train],
         "holdout": [replay_source(replay, digest) for replay, digest in holdout],
         "metrics_scope": "nominal_action",
+        **({"base_train_ids": sorted(base_ids),
+            "movement_examples": {phase: len(weights[phase + "_action"]) for phase in phases}} if movement else {}),
         **({"range_seconds": RANGE_SECONDS, "range_weight": range_weight, "balance_maps": balance}
            if policy == "range-evasion" else {}),
         "metrics": record,

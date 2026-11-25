@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory=$true)][ValidatePattern('^train-[a-f0-9]{32}$')][string]$PreviousJob,
     [string[]]$Batch = @(),
     [string[]]$Development = @(),
-    [ValidateSet('legacy', 'maneuver', 'maneuver-evasion', 'range-evasion')][string[]]$Modes = @('maneuver', 'maneuver-evasion'),
+    [ValidateSet('legacy', 'maneuver', 'maneuver-evasion', 'range-evasion', 'opening-imitation', 'movement-imitation')][string[]]$Modes = @('maneuver', 'maneuver-evasion'),
+    [ValidatePattern('^train-[a-f0-9]{32}$')][string]$BaseJob,
     [double]$RangeWeight,
     [switch]$BalanceMaps
 )
@@ -22,6 +23,9 @@ function Get-ReplayIds([string[]]$Paths) {
 }
 $trainIds = @($work.params.train_ids) + @(Get-ReplayIds $Batch)
 $holdoutIds = @($work.params.holdout_ids) + @(Get-ReplayIds $Development)
+$baseWork = if ($BaseJob) {
+    Get-Content -Raw -Encoding utf8 (Join-Path $root ".local/training/jobs/$BaseJob/request.json") | ConvertFrom-Json
+} else { $work }
 $inputs = foreach ($id in $trainIds + $holdoutIds) {
     '--input'
     Join-Path $root ".local/online/replays/$id.json.gz"
@@ -43,6 +47,11 @@ try {
             if ($PSBoundParameters.ContainsKey('RangeWeight')) { $params.range_weight = $RangeWeight }
             elseif ($null -ne $work.params.range_weight) { $params.range_weight = $work.params.range_weight }
             $params.balance_maps = if ($PSBoundParameters.ContainsKey('BalanceMaps')) { [bool]$BalanceMaps } else { [bool]$work.params.balance_maps }
+        }
+        if ($mode -in @('opening-imitation', 'movement-imitation')) {
+            $params.base_train_ids = if ($baseWork.params.base_train_ids) { @($baseWork.params.base_train_ids) }
+                                     else { @($baseWork.params.train_ids) }
+            $params.base_train_ids = @($params.base_train_ids)
         }
         $params = $params | ConvertTo-Json -Compress
         & $tank jobs start fit_boss_sparring.py --config $work.config_id @inputs --params $params --json

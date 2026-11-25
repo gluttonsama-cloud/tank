@@ -17,10 +17,27 @@ else:
 
 
 STATIONARY_DISTANCE = 0.025  # 大于连续两帧坐标舍入产生的最大欧氏误差。
+MOVEMENT_START_DISTANCE = 0.05
 
 
 def rate(count, total):
     return count / total if total else None
+
+
+def movement_start(frames, frame_index, spawn):
+    def spawn_distance(frame):
+        x, y = frame[frame_index][:2]
+        return hypot(x - spawn.x, y - spawn.y)
+
+    # Replay coordinates are rounded to two decimal places; keep exact 0.05-cell steps below the cutoff.
+    tick = next((frame[0] for frame in frames if spawn_distance(frame) > MOVEMENT_START_DISTANCE + 1e-12), None)
+    third_second = 3 * rules.TICK_HZ
+    return {
+        "seconds": tick / rules.TICK_HZ if tick is not None else None,
+        "censored": tick is None,
+        "censor_lower_bound_s": frames[-1][0] / rules.TICK_HZ if tick is None else None,
+        "displacement_at_3s_cells": spawn_distance(frames[third_second]) if third_second < len(frames) else None,
+    }
 
 
 def summarize_match(replay, challenger_side, *, until=None):
@@ -53,6 +70,7 @@ def summarize_match(replay, challenger_side, *, until=None):
         shots, hits = states[-1][10], states[-1][9]
         return {
             "hp": states[-1][3],
+            "movement_start": movement_start(frames, side + 1, game_map.spawns[side]),
             "shots": shots,
             "hits": hits,
             "hit_rate": rate(hits, shots),
@@ -102,28 +120,72 @@ def verify_unseen(root, model, replays):
             raise ValueError(f"回放 {replay_id} 与 {model} 的训练或选模数据重复")
 
 
-def common_alive_distances(official, local_replays):
+def shrink_comparisons(margins):
+    official, *local = margins
+    return [
+        {
+            "frames": len(official),
+            "margin_mae_cells": fmean(abs(ref - actual) for ref, actual in zip(official, values, strict=True))
+            if official else None,
+            "official_outside_s": sum(value < 0 for value in official) / rules.TICK_HZ if official else None,
+            "local_outside_s": sum(value < 0 for value in values) / rules.TICK_HZ if official else None,
+            "official_inside_local_outside_s": (
+                sum(ref >= 0 > actual for ref, actual in zip(official, values, strict=True)) / rules.TICK_HZ
+                if official else None
+            ),
+        }
+        for values in local
+    ]
+
+
+def common_alive_distances(official, local_replays, *, boss_side=None):
     distances = [[] for _ in range(len(local_replays) + 1)]
+    margins = [[] for _ in distances]
     for frames in zip(official["frames"], *(replay["frames"] for replay in local_replays)):
-        if any(frame[0] != frames[0][0] for frame in frames[1:]):
+        tick = frames[0][0]
+        if any(frame[0] != tick for frame in frames[1:]):
             raise ValueError(f"官网回放与本地复跑的帧号不一致 {official['match']['id']}")
         if not all(red[4] and blue[4] for _, red, blue, _, _ in frames):
             break
         for values, (_, red, blue, _, _) in zip(distances, frames, strict=True):
             values.append(hypot(blue[0] - red[0], blue[1] - red[1]))
+        if boss_side is not None and tick > rules.ZONE_START_TICKS:
+            radius = rules.zone_radius(tick)
+            for values, frame in zip(margins, frames, strict=True):
+                x, y = frame[boss_side + 1][:2]
+                values.append(radius - hypot(x - rules.ZONE_CX, y - rules.ZONE_CY))
     if not distances[0]:
         raise ValueError(f"官网回放与本地复跑没有双方存活的共同帧 {official['match']['id']}")
     reference = {"frames": len(distances[0]), "official_median_distance_cells": median(distances[0])}
-    return [reference | {"local_median_distance_cells": median(values)} for values in distances[1:]]
+    rows = [reference | {"local_median_distance_cells": median(values)} for values in distances[1:]]
+    if boss_side is not None:
+        for row, shrink in zip(rows, shrink_comparisons(margins), strict=True):
+            row["shrink"] = shrink
+    return rows
+
+
+def compare_movement_starts(official, local):
+    ref, actual = official["seconds"], local["seconds"]
+    exact = abs(ref - actual) if ref is not None and actual is not None else None
+    if exact is not None:
+        lower_bound = exact
+    elif ref is not None:
+        lower_bound = max(0, local["censor_lower_bound_s"] - ref)
+    elif actual is not None:
+        lower_bound = max(0, official["censor_lower_bound_s"] - actual)
+    else:
+        lower_bound = None
+    return {"abs_error_s": exact, "abs_error_lower_bound_s": lower_bound}
 
 
 def matched_games(root, models, candidates, seeds, save_dir=None, *, replay_ids=None,
-                  require_unseen=False, include_common_alive=False):
+                  require_unseen=False, include_common_alive=False, movement_baseline=None):
     for keys in (models, candidates, seeds):
         if len(set(keys)) != len(keys):
             raise ValueError("快照或地图种子重复")
     for version_id in set(models + candidates) - {"baseline"}:
         versions.verify(root, version_id)
+    baseline_index = models.index(movement_baseline) if movement_baseline is not None else None
     cases = official_cases(root, candidates, seeds, replay_ids=replay_ids)
     replays = {r["id"]: load(root / ".local/online/replays" / f"{r['id']}.json.gz")
                for official in cases.values() for r, _ in official}
@@ -137,6 +199,7 @@ def matched_games(root, models, candidates, seeds, save_dir=None, *, replay_ids=
             replay = replays[replay_id]
             remote = summarize_match(replay, side) | {
                 "reason": replay["result"]["reason"], "score": replay["result"]["scores"][side]["total"],
+                "zone_deaths": replay["result"]["zone_deaths"],
             }
             local_replays, rows = [], []
             for model in models:
@@ -159,17 +222,46 @@ def matched_games(root, models, candidates, seeds, save_dir=None, *, replay_ids=
                     "official": remote,
                     "local": summarize_match(local_replay, side) | {
                         "reason": match["result"]["reason"], "score": match["scores"][side],
+                        "zone_deaths": local_replay["result"]["zone_deaths"],
                     },
                     "same_duration": {
                         "official": summarize_match(replay, side, until=until),
                         "local": summarize_match(local_replay, side, until=until),
                     },
                 })
-                if include_common_alive:
+                if include_common_alive or baseline_index is not None:
                     local_replays.append(local_replay)
-            if include_common_alive:
-                for row, distance in zip(rows, common_alive_distances(replay, local_replays), strict=True):
+            if include_common_alive or baseline_index is not None:
+                boss_side = 1 - side
+                comparisons = common_alive_distances(replay, local_replays, boss_side=boss_side)
+                shared_start = not remote["boss"]["movement_start"]["censored"] and all(
+                    not row["local"]["boss"]["movement_start"]["censored"] for row in rows
+                )
+                for index, (row, distance) in enumerate(zip(rows, comparisons, strict=True)):
                     row["common_alive"] = distance
+                    row["movement"] = {
+                        "start": {
+                            name: compare_movement_starts(remote[name]["movement_start"],
+                                                         row["local"][name]["movement_start"])
+                            for name in ("boss", "challenger")
+                        },
+                        "boss_start_observed_in_all_versions": shared_start,
+                        "official_boss_zone_died": bool(remote["zone_deaths"][boss_side]),
+                        "local_boss_zone_died": bool(row["local"]["zone_deaths"][boss_side]),
+                    }
+                    if baseline_index is not None and index != baseline_index:
+                        baseline_replay = local_replays[baseline_index]
+                        baseline_row = rows[baseline_index]
+                        baseline_alive, trial_alive = common_alive_distances(
+                            replay, [baseline_replay, local_replays[index]], boss_side=boss_side
+                        )
+                        paired_start = all(not entry["boss"]["movement_start"]["censored"]
+                                           for entry in (remote, baseline_row["local"], row["local"]))
+                        row["movement"]["with_baseline"] = {
+                            "boss_start_observed_in_pair": paired_start,
+                            "baseline": baseline_alive,
+                            "candidate": trial_alive,
+                        }
             games.extend(rows)
     return {"rules": rules.as_dict()["version"], "models": models, "candidates": candidates,
             "seeds": seeds, "ids": sorted(replays), "require_unseen": require_unseen, "games": games}

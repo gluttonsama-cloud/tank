@@ -11,6 +11,43 @@ from seedcup.game.replay import FORMAT_VERSION, ReplayRecorder
 from seedcup.game.runner import match_info
 
 
+def test_movement_memory_selects_identifiable_actions_in_each_phase():
+    from training.boss_movement import fit_memory, near_zone_edge
+
+    ticks = rules.ZONE_START_TICKS + 3
+    x = np.zeros((ticks, 48), dtype=np.float32)
+    x[10:, 1] = 3 / rules.W
+    x[:, 17] = 1
+    x[-2:, 17] = .05
+    y = np.zeros((ticks, 3), dtype=np.float32)
+    y[2, 0] = np.nan
+    y[-2:, 0] = -1
+    memory = fit_memory([(x, y)], ["opening", "zone"])
+    assert memory["opening_action"].shape == (9, 2)
+    np.testing.assert_equal(memory["zone_action"], [[-1, 0], [-1, 0]])
+    assert not near_zone_edge(0, -1)
+
+
+def test_opening_recovery_only_intervenes_after_a_stalled_launch(monkeypatch):
+    from training import boss_movement as movement
+
+    monkeypatch.setattr(movement, "predict", lambda f, w: None)
+    monkeypatch.setattr(movement, "decode", lambda *args: (0., 0., False))
+    monkeypatch.setattr(movement, "retrieved_action", lambda *args: (1., -.5))
+    bot = movement.MovementSparring.__new__(movement.MovementSparring)
+    bot.features = lambda obs: np.zeros(48)
+    bot.features.flip = False
+    bot.weights, bot.evade = {}, None
+
+    def run(xs):
+        bot.spawn, bot.launched, bot.recover_launch = None, False, False
+        return [bot.decide({"frame": tick, "self": {"x": x, "y": 3}})["forward"]
+                for tick, x in enumerate(xs)]
+
+    assert run([1] * 6 + [1.5, 2.6]) == [0] * 5 + [1, 1, 0]
+    assert run([1] + [1.1] * 10) == [0] * 11
+
+
 @pytest.fixture
 def trainer(monkeypatch):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1] / "training"))

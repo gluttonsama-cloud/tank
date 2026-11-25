@@ -1,15 +1,17 @@
 from math import atan2, degrees
 
 import pytest
+from seedcup import Bot
 from seedcup.game import Game, GameMap, generate_map, rules
 from seedcup.game.engine import Shell
 from seedcup.game.maps import Spawn
 from seedcup.game.replay import ReplayRecorder, save
+from tank.simulation import run_match
 from tank.workspace import write_json
 
 from training.boss_behavior_matches import matched_games, verify_unseen
 from training.compare_boss import official_cases
-from training.evaluate_boss_behavior import ReplayTrace, branch, evaluate_trace, static_intercept
+from training.evaluate_boss_behavior import ReplayTrace, branch, evaluate_trace, model_factory, static_intercept
 from training.fit_boss_sparring import BOSS_NAME
 
 
@@ -35,12 +37,51 @@ def replay_with_incoming_shell(action):
     return ReplayTrace(recorder.to_dict({"ticks": 24}))
 
 
-class StillBot:
+class StillBot(Bot):
     def on_match_start(self, info):
         pass
 
     def decide(self, observation):
         return IDLE
+
+
+def test_window_with_delayed_actions_keeps_the_first_observations():
+    calls = []
+
+    class Driver(StillBot):
+        def decide(self, observation):
+            calls.append(observation["frame"])
+            return DRIVE
+
+    trace = replay_with_incoming_shell(DRIVE)
+    rows, _ = branch(trace, Driver, 0, range(1, 12), [], 0, idle_prefix_ticks=10)
+    origin = trace.frames[0][1][:2]
+    assert list(rows[10]["prediction_xy"]) == list(origin)
+    assert tuple(rows[11]["prediction_xy"]) != tuple(origin)
+    assert calls == list(range(11))
+
+
+def test_model_factory_reads_each_snapshots_sibling_imports(tmp_path, monkeypatch):
+    import sys
+    from tank import versions
+
+    monkeypatch.setattr(versions, "verify", lambda root, model: None)
+    monkeypatch.setattr(versions, "snapshot_data", lambda root, model: root / model)
+    old_path = sys.path[:]
+    for version in ("a", "b"):
+        folder = tmp_path / version
+        folder.mkdir()
+        write_json(folder / "submission.json", {"runtime": "python", "entrypoint": "bot.py:Example"})
+        (folder / "bot.py").write_text(
+            "from sibling_model import value\nclass Example:\n"
+            "    def run(self):\n        from lazy_model import offset\n        return value + offset\n")
+        (folder / "sibling_model.py").write_text(f"value = {version!r}\n")
+        (folder / "lazy_model.py").write_text(f"offset = {version!r}\n")
+    for version in ("a", "b", "a"):
+        with model_factory(tmp_path, version) as factory:
+            assert factory().run() == version * 2
+        assert sys.path == old_path
+        assert "sibling_model" not in sys.modules and "lazy_model" not in sys.modules
 
 
 def test_event_tracks_one_shell_and_scores_actual_and_simulated_outcomes():
@@ -151,6 +192,33 @@ def test_compare_uses_only_selected_ids_and_one_game_per_side(tmp_path):
         official_cases(tmp_path, ["candidate"], [42], replay_ids=[101, 102, 103])
     with pytest.raises(ValueError, match="未匹配.*104"):
         official_cases(tmp_path, ["candidate"], [42], replay_ids=[101, 104])
+
+
+def test_match_movement_retains_zone_death_from_the_full_sdk_result(tmp_path, monkeypatch):
+    from tank import versions
+
+    monkeypatch.setattr(versions, "verify", lambda root, model: None)
+    monkeypatch.setattr(versions, "load_bot", lambda root, model: StillBot())
+    seed = 42
+    replay = run_match(StillBot(), StillBot(), seed, 0, replay=True)["replay"]
+    boss_side = replay["result"]["zone_deaths"].index(True)
+    for replay_id, side in ((101, "red"), (102, "blue")):
+        add_practice(tmp_path, "candidate", replay_id, side, replay["map"])
+        replay["match"]["id"] = replay_id
+        save(tmp_path / ".local/online/replays" / f"{replay_id}.json.gz", replay)
+
+    report = matched_games(tmp_path, ["baseline"], ["candidate"], [seed],
+                           replay_ids=[101, 102], include_common_alive=True)
+    [game] = [row for row in report["games"] if row["challenger_side"] == ("blue", "red")[boss_side]]
+    assert game["movement"]["official_boss_zone_died"] is True
+    assert game["movement"]["local_boss_zone_died"] is True
+    assert game["common_alive"]["frames"] == replay["result"]["ticks"]
+    assert game["common_alive"]["shrink"]["frames"] > 0
+    assert game["common_alive"]["shrink"]["margin_mae_cells"] == 0
+    assert game["official"]["boss"]["movement_start"] == {
+        "seconds": None, "censored": True, "censor_lower_bound_s": replay["result"]["seconds"],
+        "displacement_at_3s_cells": 0,
+    }
 
 
 def test_compare_checks_unseen_before_running_and_checks_grid(tmp_path, monkeypatch):
