@@ -1,5 +1,6 @@
 """Resumable online practice campaigns and replay collection CLI."""
 import argparse
+import getpass
 import json
 import os
 import re
@@ -92,8 +93,7 @@ def check_host(root):
     from . import practice_host
     if practice_host.is_remote(root):
         raise ValueError("请在共享练习主机上启动主动采样；本机可运行 sample watch 收集已有回放")
-    if not practice_host.host_running(root):
-        raise ValueError("请先启动共享练习主机 tank sample host-serve，供队友排队")
+    online.sampling_credentials(root)
 
 
 def start(root, *, target, maps=None, seed=None, names=None, mode="active", interval=60, foreground=False):
@@ -171,13 +171,13 @@ def save_cases(root, key, step, plan, records, client):
     for r in sorted(records, key=lambda item: item["id"]):
         side = r["side"]
         if (r["case_tag"] != f"{key}-{step}" or r["version_id"] != version or r["level"] != plan["target"]
-                or r["map_seed"] != seed or r["team_id"] != client.user["id"] or side not in ("red","blue")):
+                or r["map_seed"] != seed or side not in ("red","blue")):
             raise ValueError(f"采样格与官网练习记录不符 {r['id']}")
         if side in seen:
             continue
         path = online.practice_replay_path(root, r["id"])
         if not path.is_file():
-            online.replay(root, r["id"], client=client)
+            online.download_sample_replay(root, r, client)
         data.ingest(root, path.read_bytes(), plan["target"], match_id=r["id"], practice=r, probe=name)
         with data.database(root) as db:
             db.execute("INSERT OR IGNORE INTO slots VALUES (?,?,?,?)", (key, step, side, r["id"]))
@@ -195,7 +195,7 @@ def drive(root, key, plan, stop):
             return "completed"
         try:
             if client is None:
-                client = online.OnlineClient.login(root)
+                client = online.sampling_client(root)
             if plan["mode"] == "watch":
                 result = data.pull(root, plan["target"], client=client)
                 message = f"本轮新增 {result['added']} 场，{len(result['pending'])} 场等待回放"
@@ -203,7 +203,6 @@ def drive(root, key, plan, stop):
             else:
                 seed, _, version = case(plan, step)
                 existing = receipts(root, key, step, version, plan["target"], recover=recover)
-                recover = False
                 if not save_cases(root, key, step, plan, existing.values(), client):
                     update(root, key, "running")
                     batch = online.collect_practice(root, version, client=client, games=2, seed=seed,
@@ -211,6 +210,7 @@ def drive(root, key, plan, stop):
                     if not save_cases(root, key, step, plan, batch["matches"], client):
                         raise ValueError("官网未返回完整换边记录")
                 step += 1
+                recover = False
                 with data.database(root) as db:
                     db.execute("UPDATE runs SET step=?,updated=? WHERE id=?", (step, time.time(), key))
                 if plan["maps"] is not None and step == plan["maps"] * plan["width"]:
@@ -253,32 +253,31 @@ def work(root, key):
             if not primary:
                 update(root, key, "failed", "同类采集进程已在运行，可稍后 resume")
                 return
-            from . import practice_host
-            next_check, paused, host_stopped = 0., False, False
+            next_check, paused = 0., False
             def stop():
-                nonlocal next_check, paused, host_stopped
+                nonlocal next_check, paused
                 if time.monotonic() >= next_check:
                     paused = bool(record(root, key)["paused"])
-                    if plan["mode"] == "active" and not paused:
-                        host_stopped = not practice_host.host_running(root)
                     next_check = time.monotonic()+.5
-                return paused or host_stopped
+                return paused
             try:
                 update(root, key, "running")
                 state = drive(root, key, plan, stop)
             except Exception as error:
                 update(root, key, "failed", str(error))
                 raise
-            update(root, key, state, "共享练习主机已停止，启动主机后可 resume" if host_stopped else "")
+            update(root, key, state)
 
 
 def add_arguments(parser):
     ops = parser.add_subparsers(dest="op", required=True)
     from . import practice_host
     practice_host.add_arguments(ops)
-    for op in ("probes", "freeze", "list", "start", "watch", "status", "pause", "resume", "pull", "import", "export"):
+    for op in ("account", "probes", "freeze", "list", "start", "watch", "status", "pause", "resume", "pull", "import", "export"):
         arg = ops.add_parser(op)
         arg.add_argument("--json", action="store_true")
+        if op == "account":
+            arg.add_argument("--username", required=True, help="采集账号学号")
         if op in ("start", "watch", "pull", "import", "export"):
             arg.add_argument("--target", default="boss", type=data.target_key, help="人机档位或 team:<队伍 ID>")
         if op in ("status", "pause", "resume"):
@@ -308,6 +307,8 @@ def dispatch(root, args):
     op = args.op
     if practice_host.handles(op):
         return practice_host.dispatch(root, args)
+    if op == "account":
+        return online.save_sampling_account(root, args.username, getpass.getpass("采集账号密码："))
     if op == "probes":
         return probes.catalog()
     if op == "freeze":

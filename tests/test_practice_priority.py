@@ -3,6 +3,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+from types import SimpleNamespace
 
 import pytest
 from seedcup.game import rules
@@ -20,7 +21,7 @@ import sys
 from tank import practice_priority
 
 root = Path(sys.argv[1])
-with practice_priority.foreground(root):
+with practice_priority.foreground(root, 57):
     with (root / 'order.txt').open('a', encoding='utf-8') as output:
         output.write(sys.argv[2] + '\\n')
 """
@@ -28,7 +29,7 @@ with practice_priority.foreground(root):
 
 def _wait_for_tickets(root: Path, count: int):
     deadline = time.monotonic() + 10
-    folder = root / ".local/online/practice-locks"
+    folder = root / ".local/online/practice-locks/team-57"
     while len(list(folder.glob("*.ticket"))) < count:
         if time.monotonic() >= deadline:
             raise AssertionError(f"等待 {count} 张前台练习票据超时")
@@ -38,14 +39,14 @@ def _wait_for_tickets(root: Path, count: int):
 def test_waiting_foreground_runs_in_ticket_order_across_processes(tmp_path):
     processes = []
     try:
-        with practice_priority.collection(tmp_path) as acquired:
+        with practice_priority.collection(tmp_path, 57) as acquired:
             assert acquired
             for name in ("first", "second"):
                 process = subprocess.Popen([sys.executable, "-c", _FOREGROUND, str(tmp_path), name],
                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 processes.append(process)
                 _wait_for_tickets(tmp_path, len(processes))
-            assert practice_priority.foreground_pending(tmp_path)
+            assert practice_priority.foreground_pending(tmp_path, 57)
             assert not (tmp_path / "order.txt").exists()
         for process in processes:
             _, error = process.communicate(timeout=10)
@@ -56,17 +57,26 @@ def test_waiting_foreground_runs_in_ticket_order_across_processes(tmp_path):
                 process.kill()
             process.communicate()
     assert (tmp_path / "order.txt").read_text(encoding="utf-8").splitlines() == ["first", "second"]
-    assert not practice_priority.foreground_pending(tmp_path)
+    assert not practice_priority.foreground_pending(tmp_path, 57)
 
 
 def test_host_queue_publishes_intent_without_holding_the_session(tmp_path):
-    with practice_priority.queue_pending(tmp_path):
-        assert practice_priority.foreground_pending(tmp_path)
-        with practice_priority.foreground(tmp_path):
-            with practice_priority.collection(tmp_path) as acquired:
+    with practice_priority.queue_pending(tmp_path, 57):
+        assert practice_priority.foreground_pending(tmp_path, 57)
+        with practice_priority.foreground(tmp_path, 57):
+            with practice_priority.collection(tmp_path, 57) as acquired:
                 assert not acquired
-        assert practice_priority.foreground_pending(tmp_path)
-    assert not practice_priority.foreground_pending(tmp_path)
+        assert practice_priority.foreground_pending(tmp_path, 57)
+    assert not practice_priority.foreground_pending(tmp_path, 57)
+
+
+def test_separate_teams_can_practice_while_foreground_is_queued(tmp_path):
+    with practice_priority.queue_pending(tmp_path, 57), practice_priority.foreground(tmp_path, 57):
+        with practice_priority.collection(tmp_path, 57) as shared, practice_priority.collection(tmp_path, 99) as separate:
+            assert not shared and separate
+            online._PracticeRoom(tmp_path, SimpleNamespace(user={"id": 99}), background=True).check()
+            with pytest.raises(online.PracticeDeferred, match="前台"):
+                online._PracticeRoom(tmp_path, SimpleNamespace(user={"id": 57}), background=True).check()
 
 
 @pytest.mark.parametrize("when", ["before_first", "between_games", "during_close", "late_start", "official_abort"])

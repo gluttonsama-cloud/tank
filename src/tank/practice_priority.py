@@ -6,8 +6,8 @@ import time
 from .eval_store import shard_lock
 
 
-def _locks(root):
-    return root / ".local/online/practice-locks"
+def _locks(root, team_id):
+    return root / ".local/online/practice-locks" / f"team-{team_id}"
 
 
 @contextmanager
@@ -40,8 +40,8 @@ def _first_ticket(folder):
     return None
 
 
-def foreground_pending(root):
-    folder = _locks(root)
+def foreground_pending(root, team_id):
+    folder = _locks(root, team_id)
     if any(folder.glob("*.ticket")) and _first_ticket(folder) is not None:
         return True
     with shard_lock(folder, "host-queue") as available:
@@ -49,11 +49,11 @@ def foreground_pending(root):
 
 
 @contextmanager
-def queue_pending(root):
+def queue_pending(root, team_id):
     """Publish queued foreground work before the host starts its next practice call."""
     deadline = time.monotonic() + 2
     while True:
-        with shard_lock(_locks(root), "host-queue") as acquired:
+        with shard_lock(_locks(root, team_id), "host-queue") as acquired:
             if acquired:
                 yield
                 return
@@ -63,8 +63,8 @@ def queue_pending(root):
 
 
 @contextmanager
-def foreground(root):
-    folder = _locks(root)
+def foreground(root, team_id):
+    folder = _locks(root, team_id)
     with ExitStack() as lease:
         with _queue(folder):
             number = max((int(path.stem) for path in folder.glob("*.ticket")), default=0) + 1
@@ -91,5 +91,5 @@ def foreground(root):
                 _remove_ticket(folder, ticket)
 
 
-def collection(root):
-    return shard_lock(_locks(root), "session")
+def collection(root, team_id):
+    return shard_lock(_locks(root, team_id), "session")

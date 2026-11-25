@@ -149,7 +149,7 @@ def ingest(root, raw, target, *, match_id=None, listing=None, practice=None, pro
 
 def pull(root, target, *, client=None):
     target_key(target)
-    client = client or online.OnlineClient.login(root)
+    client = client or online.sampling_client(root)
     own_id = client.user["id"]
     if target == f"team:{own_id}":
         raise ValueError("请指定对手的官网队伍 ID")

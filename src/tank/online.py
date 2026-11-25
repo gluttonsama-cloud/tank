@@ -83,6 +83,40 @@ def account_path(root):
     return root / ".local/online/account.json"
 
 
+def sampling_account_path(root):
+    return root / ".local/online/sampling-account.json"
+
+
+def sampling_credentials(root):
+    path = sampling_account_path(root)
+    if not path.is_file():
+        raise OnlineError("请在采集主机运行 tank sample account --username <学号>")
+    return read_json(path)
+
+
+def save_sampling_account(root, username, password):
+    client = OnlineClient(username, password)
+    if client.user["must_change"]:
+        raise OnlineError("请先登录官网修改采集账号的初始密码")
+    identity = {"username": username, "team_id": client.user["id"]}
+    write_json(sampling_account_path(root), identity | {"password": password})
+    return identity
+
+
+def sampling_client(root):
+    saved = sampling_credentials(root)
+    client = OnlineClient(saved["username"], saved["password"])
+    if client.user["id"] != saved["team_id"]:
+        raise OnlineError("官网队伍 ID 已变更，请重新配置采集账号")
+    return client
+
+
+def download_sample_replay(root, record, client):
+    if record.get("team_id") != client.user["id"]:
+        raise OnlineError(f"原采集账号的对局 {record['id']} 尚未归档，请用原账号运行 tank online replay {record['id']}")
+    return replay(root, record["id"], client=client)
+
+
 def account(root):
     path = account_path(root)
     if path.is_file():
@@ -649,7 +683,11 @@ def replay(root: Path, match_id: int, *, client=None) -> dict:
     version_id = record["version_id"]
     if versions.describe(root, version_id).get("id") != version_id:
         raise OnlineError(f"对局 {match_id} 的本机练习记录与快照清单的 id 不一致")
-    client = client if client is not None else OnlineClient.login(root)
+    if client is None:
+        if sampling_account_path(root).is_file() and record.get("team_id") == sampling_credentials(root)["team_id"]:
+            client = sampling_client(root)
+        else:
+            client = OnlineClient.login(root)
     return _archive_practice_replay(root, client, record)
 
 
@@ -664,7 +702,7 @@ class _PracticeRoom:
         self.pending = root / ".local/online" / f"collection-room-{client.user['id']}.json"
 
     def check(self):
-        if self.background and practice_priority.foreground_pending(self.root):
+        if self.background and practice_priority.foreground_pending(self.root, self.client.user["id"]):
             raise PracticeDeferred("前台官网练习优先")
         if self.stop is not None and self.stop():
             raise PracticeDeferred("后台采集已暂停")
@@ -923,8 +961,8 @@ def practice(root: Path, version_id: str, *, client=None, games=1, seed=None, le
     result = {"room": None, "level": level, "version_id": version_id, "matches": []}
     try:
         try:
-            with practice_priority.foreground(root):
-                client = client if client is not None else OnlineClient.login(root)
+            client = client if client is not None else OnlineClient.login(root)
+            with practice_priority.foreground(root, client.user["id"]):
                 asyncio.run(_practice(root, version_id, client, games, seed, level, result,
                                       case_tag=case_tag, bot_factory=bot_factory))
         except TimeoutError:
@@ -943,17 +981,18 @@ def practice(root: Path, version_id: str, *, client=None, games=1, seed=None, le
 
 def collect_practice(root: Path, version_id: str, *, client=None, games=2, seed=None, level="rookie",
                      stop=None, case_tag=None) -> dict:
-    """Run one background room on the shared workbench host's team account."""
+    """Run one background room on the sampling account."""
     _validate_practice(root, version_id, games, seed, level, case_tag)
     result = {"room": None, "level": level, "version_id": version_id, "matches": []}
     try:
-        with practice_priority.collection(root) as acquired:
-            if not acquired or practice_priority.foreground_pending(root):
+        client = client if client is not None else sampling_client(root)
+        team_id = client.user["id"]
+        with practice_priority.collection(root, team_id) as acquired:
+            if not acquired or practice_priority.foreground_pending(root, team_id):
                 raise PracticeDeferred("工作台已有官网练习请求")
             if stop is not None and stop():
                 raise PracticeDeferred("后台采集已暂停")
             try:
-                client = client if client is not None else OnlineClient.login(root)
                 room = _PracticeRoom(root, client, background=True, stop=stop)
                 asyncio.run(_practice(root, version_id, client, games, seed, level, result, room, case_tag))
             except (_ConnectionReplaced, RequestUncertain) as error:

@@ -12,8 +12,8 @@ from tank import sampling_data as data
 from tank.workspace import read_json, write_json
 
 
-def replay(mid, seed, side="red", *, rival=None):
-    own = {"id": 1, "name": "采样方", "bot": False}
+def replay(mid, seed, side="red", *, rival=None, team_id=1):
+    own = {"id": team_id, "name": "采样方", "bot": False}
     other = (
         {"id": None, "name": online.PRACTICE_NAMES["boss"], "bot": True}
         if rival is None
@@ -93,14 +93,44 @@ def test_legacy_practice_binds_to_official_result(tmp_path):
         data.ingest(tmp_path, game, "boss", listing=listing, practice=old | {"result": {"ticks": 2}})
 
 
-def test_active_collection_requires_shared_host_even_when_no_client_is_configured(tmp_path, monkeypatch):
-    with pytest.raises(ValueError, match="host-serve"):
+def test_sampling_requires_its_own_credentials_and_runs_without_foreground_server(tmp_path):
+    write_json(online.account_path(tmp_path), {"username": "main", "password": "test"})
+    with pytest.raises(ValueError, match="sample account"):
         sampling.check_host(tmp_path)
-    monkeypatch.setattr(practice_host, "host_running", lambda root: True)
+    write_json(online.sampling_account_path(tmp_path), {"username": "sample", "password": "test", "team_id": 2})
     sampling.check_host(tmp_path)
     practice_host.configure(tmp_path, "http://192.0.2.1:8767")
     with pytest.raises(ValueError, match="共享练习主机上"):
         sampling.check_host(tmp_path)
+
+
+def test_sampling_authentication_never_uses_the_foreground_account(tmp_path, monkeypatch):
+    calls = []
+
+    def authenticate(username, password):
+        calls.append(username)
+        if password == "invalid":
+            raise online.RemoteError(401, "登录失败")
+        return SimpleNamespace(user={"id": 2, "must_change": username == "new"})
+
+    monkeypatch.setattr(online, "OnlineClient", authenticate)
+    write_json(online.account_path(tmp_path), {"username": "main", "password": "primary"})
+    with pytest.raises(online.OnlineError, match="sample account"):
+        online.sampling_client(tmp_path)
+    assert online.save_sampling_account(tmp_path, "sample", "valid") == {"username": "sample", "team_id": 2}
+    with pytest.raises(online.OnlineError, match="初始密码"):
+        online.save_sampling_account(tmp_path, "new", "initial")
+    assert online.sampling_client(tmp_path).user["id"] == 2
+    path = online.sampling_account_path(tmp_path)
+    write_json(path, read_json(path) | {"password": "invalid"})
+    with pytest.raises(online.RemoteError, match="登录失败"):
+        data.pull(tmp_path, "boss")
+    assert calls == ["sample", "new", "sample", "sample"]
+
+
+def test_missing_old_team_replay_reports_match_before_opening_another_room(tmp_path):
+    with pytest.raises(online.OnlineError, match="tank online replay 50"):
+        online.download_sample_replay(tmp_path, {"id": 50, "team_id": 1}, SimpleNamespace(user={"id": 2}))
 
 
 def test_paused_between_sides_resumes_without_duplicate_training_rows(tmp_path, monkeypatch):
@@ -121,7 +151,8 @@ def test_paused_between_sides_resumes_without_duplicate_training_rows(tmp_path, 
             "INSERT INTO runs(id,plan,state,updated) VALUES (?,?,?,?)",
             (key, json.dumps(plan), "queued", time.time()),
         )
-    monkeypatch.setattr(online.OnlineClient, "login", lambda root: SimpleNamespace(user={"id": 1}))
+    team_id = 1
+    monkeypatch.setattr(online, "sampling_client", lambda root: SimpleNamespace(user={"id": team_id}))
     paused = False
 
     def fake_room(root, version, *, client, case_tag, **kwargs):
@@ -130,12 +161,12 @@ def test_paused_between_sides_resumes_without_duplicate_training_rows(tmp_path, 
         def finish(mid, side):
             path = online.practice_replay_path(root, mid)
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(replay(mid, kwargs["seed"], side))
+            path.write_bytes(replay(mid, kwargs["seed"], side, team_id=client.user["id"]))
             record = {
                 "id": mid,
                 "side": side,
                 "version_id": version,
-                "team_id": 1,
+                "team_id": client.user["id"],
                 "map_seed": kwargs["seed"],
                 "room": "ABC123",
                 "case_tag": case_tag,
@@ -154,11 +185,13 @@ def test_paused_between_sides_resumes_without_duplicate_training_rows(tmp_path, 
     monkeypatch.setattr(online, "collect_practice", fake_room)
     assert sampling.drive(tmp_path, key, plan, lambda: paused) == "paused"
     assert sampling.status(tmp_path, key)["games"] == 1
+    team_id = 2
     assert sampling.drive(tmp_path, key, plan, lambda: False) == "completed"
     out = tmp_path / "actual.json"
     assert data.dataset(tmp_path, "boss", run=key, output=out)["games"] == 2
     entries = read_json(out)
     assert [e["id"] for e in entries] == [50, 52] and all(e["probe"] == "peek" for e in entries)
+    assert [e["players"][side]["id"] for e, side in zip(entries, ("red", "blue"))] == [1, 2]
 
 
 def test_restart_accepts_matching_tag_only(tmp_path):

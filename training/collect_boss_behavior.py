@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 import tempfile
 
-from tank import online, practice_host, versions
+from tank import online, versions
 from tank.sampling import check_host
 from tank.workspace import project_root, read_json, write_json
 
@@ -43,20 +43,26 @@ def collect(root, batch, lancer=LANCER):
         folder = root / ".local/online/practice" / key / "boss"
         records = sorted((r for p in folder.glob("*.json") if (r := read_json(p))["seed"] == seed),
                          key=lambda r: r["id"])
+        # Preserve the first official game for each side when a partial batch resumes.
+        for side in ("red", "blue"):
+            old = next((r for r in records if r["side"] == side), None)
+            if old is not None and not online.practice_replay_path(root, old["id"]).is_file():
+                if client is None:
+                    client = online.sampling_client(root)
+                online.download_sample_replay(root, old, client)
         if {r["side"] for r in records} != {"red", "blue"}:
             check_host(root)
             if client is None:
-                client = online.OnlineClient.login(root)
+                client = online.sampling_client(root)
             print(batch, seed, name, flush=True)
-            new = online.collect_practice(root, key, client=client, level="boss", seed=seed, games=2,
-                                          stop=lambda: not practice_host.host_running(root))
+            new = online.collect_practice(root, key, client=client, level="boss", seed=seed, games=2)
             records.extend(new["matches"])
         for side in ("red", "blue"):
             record = next(r for r in records if r["side"] == side)
             if record["map_seed"] != seed or record["version_id"] != key or record["level"] != "boss":
                 raise ValueError(f"对局 {record['id']} 的地图、策略或档位与采样计划不符")
             if not online.practice_replay_path(root, record["id"]).is_file():
-                online.replay(root, record["id"], client=client)
+                online.download_sample_replay(root, record, client)
             selected.append({"id": record["id"], "version_id": key, "probe": name, "seed": seed, "side": side})
         print("archived", [r["id"] for r in selected[-2:]], flush=True)
     write_json(root / ".local/behavior" / f"batch-{batch}.json", selected)

@@ -3,6 +3,7 @@ import gzip
 from pathlib import Path
 from threading import Event, Thread
 import time
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -12,6 +13,11 @@ from tank.workspace import read_json, write_json
 
 
 TOKEN = b"test practice host token"
+
+
+@pytest.fixture(autouse=True)
+def foreground_account(monkeypatch):
+    monkeypatch.setattr(online.OnlineClient, "login", lambda root: SimpleNamespace(user={"id": 57}))
 
 
 def _snapshot(root, code="# fixed source\n"):
@@ -71,7 +77,7 @@ def test_known_snapshot_downloads_result_after_duplicate_submit(tmp_path, monkey
 
     def run(root, **spec):
         assert root == host
-        assert practice_priority.foreground_pending(root)
+        assert practice_priority.foreground_pending(root, spec["client"].user["id"])
         versions.verify(root, spec["version_id"])
         calls.append(spec)
         match = _store_match(root, spec, spec["case_tag"], len(calls))
@@ -114,7 +120,7 @@ def test_host_enqueues_in_acceptance_order_and_checks_id_conflicts(tmp_path, mon
     seeds = []
 
     def run(root, **spec):
-        assert practice_priority.foreground_pending(root)
+        assert practice_priority.foreground_pending(root, spec["client"].user["id"])
         seeds.append(spec["seed"])
         if spec["seed"] == 1:
             active.set()
@@ -138,6 +144,32 @@ def test_host_enqueues_in_acceptance_order_and_checks_id_conflicts(tmp_path, mon
         with pytest.raises(ValueError, match="没有该官网对局"):
             client.request("/practice/replay", {"request_id": second["request_id"], "match_id": 1})
     assert seeds == [1, 2, 3]
+
+
+def test_queue_reserves_authenticated_team_before_waiting_for_remote_strategy(tmp_path, monkeypatch):
+    team_ids = iter((57, 99))
+    monkeypatch.setattr(online.OnlineClient, "login", lambda root: SimpleNamespace(user={"id": next(team_ids)}))
+    first_waiting, release = Event(), Event()
+    observed = []
+
+    def attach(relay):
+        observed.append(tuple(practice_priority.foreground_pending(tmp_path, team) for team in (57, 99)))
+        if len(observed) == 1:
+            first_waiting.set()
+            assert release.wait(4)
+        raise online.OnlineError("结束模拟练习")
+
+    monkeypatch.setattr(practice_host.Relay, "attach", attach)
+    with _service(tmp_path) as client:
+        first, second = (_submit("v-" + "a" * 64) for _ in range(2))
+        client.request("/practice/submit", first)
+        try:
+            assert first_waiting.wait(4)
+            client.request("/practice/submit", second)
+        finally:
+            release.set()
+        assert _wait(client, second["request_id"])["status"] == "failed"
+    assert observed == [(True, False), (False, True)]
 
 
 def test_host_rejects_bad_token_and_snapshot_upload(tmp_path, monkeypatch):
@@ -179,7 +211,7 @@ for line in sys.stdin:
 
     def run(root, *, bot_factory, **spec):
         assert root == host
-        assert practice_priority.foreground_pending(root)
+        assert practice_priority.foreground_pending(root, spec["client"].user["id"])
         assert not (root / ".local/versions" / key).exists()
         bot = bot_factory()
         bot.on_match_start({"match_id": 1, "side": "red"})
@@ -197,7 +229,6 @@ for line in sys.stdin:
         return _store_match(root, record, record["case_tag"], 1)
 
     monkeypatch.setattr(online, "practice", run)
-    monkeypatch.setattr(online.OnlineClient, "login", lambda root: object())
     monkeypatch.setattr(online, "_archive_practice_replay", archive)
     with _service(host) as client:
         practice_host.configure(player, client.url)

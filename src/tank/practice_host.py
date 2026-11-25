@@ -173,7 +173,7 @@ class Coordinator:
         self.next_nonce_sweep = 0
         self.relays = {}
         self.pending = ExitStack()
-        self.pending_active = False
+        self.pending_team = None
         self.worker = Thread(target=self._run, name="practice-host")
         self.stopping = False
         self.stop_flag = stop_flag
@@ -197,7 +197,6 @@ class Coordinator:
         return self
 
     def start(self):
-        self._mark_pending()
         self.worker.start()
 
     def __exit__(self, *_):
@@ -234,10 +233,12 @@ class Coordinator:
     def _next(self):
         return self.db.execute("SELECT * FROM requests WHERE status = 'queued' ORDER BY rowid LIMIT 1").fetchone()
 
-    def _mark_pending(self):
-        if not self.pending_active and self._next() is not None:
-            self.pending.enter_context(practice_priority.queue_pending(self.root))
-            self.pending_active = True
+    def _mark_pending(self, team_id):
+        if self.pending_team != team_id:
+            self.pending.close()
+            self.pending_team = None
+            self.pending.enter_context(practice_priority.queue_pending(self.root, team_id))
+            self.pending_team = team_id
 
     def _run(self):
         while True:
@@ -251,11 +252,13 @@ class Coordinator:
                 with self.db:
                     self.db.execute("UPDATE requests SET status = 'running' WHERE request_id = ?", (request_id,))
             try:
+                client = online.OnlineClient.login(self.root)
+                self._mark_pending(client.user["id"])
                 bot = {}
                 if relay is not None:
                     relay.attach()
                     bot["bot_factory"] = lambda: RemoteBot(relay)
-                result = online.practice(self.root, **spec, case_tag=_tag(request_id), **bot)
+                result = online.practice(self.root, **spec, client=client, case_tag=_tag(request_id), **bot)
                 status, failure = "completed", None
             except FAILED as error:
                 result = self._saved_result(request_id, spec)
@@ -280,7 +283,7 @@ class Coordinator:
                     del self.relays[request_id]
                 if self.stop_requested() or self._next() is None:
                     self.pending.close()
-                    self.pending_active = False
+                    self.pending_team = None
 
     def verify(self, action, timestamp, nonce, signature, body):
         if (not re.fullmatch(r"[0-9]{10}", timestamp) or not lan.NONCE.fullmatch(nonce)
@@ -336,7 +339,6 @@ class Coordinator:
                         "INSERT INTO requests (request_id, spec, status) VALUES (?, ?, 'queued')",
                         (request_id, json_text(spec)),
                     )
-                self._mark_pending()
                 self.ready.notify()
                 return {"request_id": request_id, "status": "queued", "relay": spec["relay"]}
             if row is None:
