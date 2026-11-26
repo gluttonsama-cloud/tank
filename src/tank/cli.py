@@ -16,7 +16,8 @@ def parser():
     web = groups.add_parser("web", help="打开本地工作台")
     web.add_argument("--port", type=int, default=8765)
     web.add_argument("--open", action="store_true")
-    from . import jobs, lan, sampling
+    from . import cycle, jobs, lan, sampling
+    cycle.add_arguments(groups.add_parser("cycle", help="天梯与人机自动训练"))
     jobs.add_arguments(groups.add_parser("jobs", help="后台训练"))
     lan.add_arguments(groups.add_parser("lan", help="局域网分片"))
     sampling.add_arguments(groups.add_parser("sample", help="在线回放采集与共享练习主机"))
@@ -129,6 +130,9 @@ def parser():
 
 
 def execute(root, args):
+    if args.group == "cycle":
+        from . import cycle
+        return cycle.dispatch(root, args)
     if args.group == "sample":
         from . import sampling
         return sampling.dispatch(root, args)
@@ -164,7 +168,7 @@ def execute(root, args):
             return versions.set_main(root, args.version_id)
         return versions.describe(root, args.version_id)
     if group == "suite":
-        from .eval_plan import SUITE_NAME, list_suites, get_suite, validate_suite
+        from .eval_plan import SUITE_NAME, get_suite, list_suites, validate_suite
         if op == "create":
             if not SUITE_NAME.fullmatch(args.name):
                 raise ValueError("方案名只能包含小写字母、数字、连字符和下划线")
@@ -186,7 +190,7 @@ def execute(root, args):
             ids = ([versions.create(root, name)["id"] for name in args.strategy] if args.strategy
                    else args.candidates.split(","))
             values = (root, ids, args.baseline or versions.main_version(root), args.suite)
-            opts = dict(shards=args.shards, mode=args.mode)
+            opts = {"shards":args.shards,"mode":args.mode}
             if op == "estimate":
                 return ev.estimate(*values, **opts, replay=args.replay)
             return ev.start(*values, **opts, timeout=args.timeout, replay=args.replay,

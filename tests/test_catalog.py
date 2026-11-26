@@ -277,7 +277,7 @@ def test_experiment_metadata_connects_new_checkout_to_original_project(tmp_path,
         patch.setattr(evaluation, "compare", unrelated)
         patch.setattr(versions, "list_versions", unrelated)
         labels = catalog.project_labels(source, [version, "baseline"])
-    assert labels == {version: [{"id": project_id, "name": "对手预测模型", "kind": "imitation", "number": 1}]}
+    assert labels == {version: [{"id": project_id, "name": "对手预测模型", "kind": "imitation", "purpose": "other", "number": 1}]}
 
     archive = tmp_path / "experiment-files"
     run_folder = archive / "published/runs" / run_id

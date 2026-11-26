@@ -1,2 +1,5 @@
 basic-specialist/bot.py text eol=crlf
 basic-specialist/submission.json text eol=crlf
+style-switch/** -text whitespace=cr-at-eol
+style-switch/policy_a/bot.py whitespace=cr-at-eol,-blank-at-eof
+style-switch/policy_b/base/stock/bot.py whitespace=cr-at-eol,-blank-at-eof

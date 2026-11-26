@@ -19,10 +19,11 @@ from .workspace import read_json
 
 
 def overview(root):
+    from . import cycle
     from .catalog import projects
     scores = root / ".local/online/team-scores.json"
     team = read_json(scores) if scores.exists() else {}
-    return {"projects": projects(root), "team_scores": {key: team.get(key) for key in ("best", "recent", "refreshed_at")},
+    return {"cycle": cycle.dashboard(root), "projects": projects(root), "team_scores": {key: team.get(key) for key in ("best", "recent", "refreshed_at")},
             "versions": versions.list_versions(root), "main": versions.main_version(root),
             "sources": sorted(p.parent.name for p in (root / "strategies").glob("*/submission.json")),
             "suites": [s["name"] for s in list_suites(root)], "runs": list_runs(root)}
@@ -185,6 +186,8 @@ class Handler(BaseHTTPRequestHandler):
 
 def serve(root, port=8765, open_browser=False):
     with WorkbenchHTTP(("127.0.0.1", port), root) as server:
+        from .cycle import resume_enabled
+        resume_enabled(root)
         url = f"http://127.0.0.1:{server.server_port}"
         print(url, flush=True)
         if open_browser:

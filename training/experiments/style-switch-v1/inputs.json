@@ -1,0 +1,1696 @@
+{
+  "train": {
+    "official_boss": [
+      {
+        "id": 14053,
+        "side": 0,
+        "seed": 1200500144,
+        "grid": "00ec121e4c59779e1b286bd71d9ab285b681a7a5f188b1e33a49b8a0abd7d0ce",
+        "version": "v-347bb1bc7deb8f248847596bcc9594f637c81178ab1b24da4defd5e5e015987f",
+        "sha256": "74d03b58904c2420d748389bbf27c135e0e8180bf15a0a62d59de49e2a9146d3"
+      },
+      {
+        "id": 14168,
+        "side": 1,
+        "seed": 1200500144,
+        "grid": "00ec121e4c59779e1b286bd71d9ab285b681a7a5f188b1e33a49b8a0abd7d0ce",
+        "version": "v-db3d6c14e58892be0e84dc66eab38d2f50996ec53d18753cf7f93f80a51722ef",
+        "sha256": "34c97b8ce128cf3d16fca72b76c47ac3414e67fe286c2e6c21ab1ac965b82a91"
+      },
+      {
+        "id": 18018,
+        "side": 0,
+        "seed": 903204731,
+        "grid": "04a9ebdc090ee13cc9e7cba63b3e435b8180501c09a1067e1bff396b3c5ce0cb",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "5b18f4cca815151d07049d9a27a5bca3b134bf0b140d5d5138535bfd547b850f"
+      },
+      {
+        "id": 18025,
+        "side": 1,
+        "seed": 903204731,
+        "grid": "04a9ebdc090ee13cc9e7cba63b3e435b8180501c09a1067e1bff396b3c5ce0cb",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "1164c3a184e9bf85fd96c3eb72aac5d369915d7191e84bd33f8cc07ca34b8712"
+      },
+      {
+        "id": 18521,
+        "side": 0,
+        "seed": 904042563,
+        "grid": "075060756693f3679021470aefdc6260e41bc51da080068af55a949fc2ab906d",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "8e0b67b1ed0b1984d00d719a089f5dc9a991820a0d16be9247d11b5d0d0a0913"
+      },
+      {
+        "id": 18526,
+        "side": 1,
+        "seed": 904042563,
+        "grid": "075060756693f3679021470aefdc6260e41bc51da080068af55a949fc2ab906d",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "e2aa062c6f8f316349a869375ccb52199698d24453084bf6dc86cf01503b16d3"
+      },
+      {
+        "id": 22284,
+        "side": 0,
+        "seed": 908650639,
+        "grid": "077a48e7d55520c03390de8b6602a200bfa2ae14c3fb1d55c1580c9e8d211b7f",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "5f8f480137a42a5c387b9665110b2f9c17b47d194ac1122dbb12bc129d6b4146"
+      },
+      {
+        "id": 22294,
+        "side": 1,
+        "seed": 908650639,
+        "grid": "077a48e7d55520c03390de8b6602a200bfa2ae14c3fb1d55c1580c9e8d211b7f",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "af58e4d768593e4dd1731eae24eb11a7106ca446794110d85331332e163f59aa"
+      },
+      {
+        "id": 14525,
+        "side": 0,
+        "seed": 713029,
+        "grid": "093c42f1250bce1e6e6e018949f9c8603b59f983d0f463be287a2055b6706201",
+        "version": "v-f7fbd3db4d9778f45ba356ab6fdd7d17f675fe44a110e1f2ec08282bf55ad8f4",
+        "sha256": "47304be23fb7e1e6c4c578c9fd40e37f5d6842bb4fff4e07c5abdc9ec56d6303"
+      },
+      {
+        "id": 14529,
+        "side": 1,
+        "seed": 713029,
+        "grid": "093c42f1250bce1e6e6e018949f9c8603b59f983d0f463be287a2055b6706201",
+        "version": "v-f7fbd3db4d9778f45ba356ab6fdd7d17f675fe44a110e1f2ec08282bf55ad8f4",
+        "sha256": "dcb8bb303314cff83f88bdc7b6b5b7463d630ec7fb062125b92ac0e0052d59a9"
+      },
+      {
+        "id": 20670,
+        "side": 0,
+        "seed": 907184433,
+        "grid": "0b565f9a1ec6f616d3debe4af58d7144d5e2110baedac2660e38d43aac4db0f0",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "2e5df3f4d6a8da79836148ea352858e14fad9f765c3945814b24d3e17ee33cff"
+      },
+      {
+        "id": 20673,
+        "side": 1,
+        "seed": 907184433,
+        "grid": "0b565f9a1ec6f616d3debe4af58d7144d5e2110baedac2660e38d43aac4db0f0",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "7ed0b2f0266f819d83cba4d842cc917328f3dfb7659c3bf4fbb36f344f731015"
+      },
+      {
+        "id": 17752,
+        "side": 0,
+        "seed": 834129904,
+        "grid": "0ff8098f5601f51446a8e46a4429e5f38968f0a2b2fa00bc194432c00e2b0cfe",
+        "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+        "sha256": "ad147e799df5aab48b4c076d0d6a5ce574427803cd59ebb40b1f1adfd595d7f8"
+      },
+      {
+        "id": 17761,
+        "side": 1,
+        "seed": 834129904,
+        "grid": "0ff8098f5601f51446a8e46a4429e5f38968f0a2b2fa00bc194432c00e2b0cfe",
+        "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+        "sha256": "62d8b71cbf11958eafcc9ba9678885b7b8d1a6b7892f7144fe40e01c8643d84e"
+      },
+      {
+        "id": 22166,
+        "side": 0,
+        "seed": 187964194,
+        "grid": "13c4b8be1a76eac4745dd482e361c96f4b706914d19f5a56fcaeb1a8757cd8a7",
+        "version": "v-2b9dfa9a5fa442edd0b7b4c223228034fce69d5b4e94e416d8f763244dc7e825",
+        "sha256": "95bb442ffcb8df3293dc0bde2900d5b595801bb6aa78a961b7e233e936473f12"
+      },
+      {
+        "id": 22191,
+        "side": 1,
+        "seed": 187964194,
+        "grid": "13c4b8be1a76eac4745dd482e361c96f4b706914d19f5a56fcaeb1a8757cd8a7",
+        "version": "v-2b9dfa9a5fa442edd0b7b4c223228034fce69d5b4e94e416d8f763244dc7e825",
+        "sha256": "d1904f4c0fe29fdd74760f23fcde5813ce8b22e062446c19d387fad3ee1da525"
+      },
+      {
+        "id": 14093,
+        "side": 0,
+        "seed": 8911,
+        "grid": "144e7f97cc0549e12827cf1ca61398112510f5707b44a47ee3d1abdf4ff960a5",
+        "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+        "sha256": "7c25b1570ba45da804fb64fab4070275ceb08bd40a6051774fd70854a2e2336e"
+      },
+      {
+        "id": 14096,
+        "side": 1,
+        "seed": 8911,
+        "grid": "144e7f97cc0549e12827cf1ca61398112510f5707b44a47ee3d1abdf4ff960a5",
+        "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+        "sha256": "a58c57c5cd11095fb89ff0bd02696c54f4d614aa0e05dd99b984953f5c086811"
+      },
+      {
+        "id": 15645,
+        "side": 0,
+        "seed": 831721137,
+        "grid": "166ee544c683d9f0bfa409cb7946b489149f458ce580ab0256ffe273b398acef",
+        "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+        "sha256": "6f646b2f299444c73cce859acb76e4e17eff0a2bb80a433a0b2edf95de4ba10c"
+      },
+      {
+        "id": 15665,
+        "side": 1,
+        "seed": 831721137,
+        "grid": "166ee544c683d9f0bfa409cb7946b489149f458ce580ab0256ffe273b398acef",
+        "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+        "sha256": "5ee390725c982619365da7a0c78bee44f194801367738ffd048fb8ef0fbc9a92"
+      },
+      {
+        "id": 22352,
+        "side": 0,
+        "seed": 908755368,
+        "grid": "2052f2c4f266feb2f4d0179790d3f2a8e3ce2b4e8cf1b7a13583bb029b4f70e1",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "fdec83769908bf7897602d97f076294490b5fde7cdec0a4ba2cab2083d659cf7"
+      },
+      {
+        "id": 22372,
+        "side": 1,
+        "seed": 908755368,
+        "grid": "2052f2c4f266feb2f4d0179790d3f2a8e3ce2b4e8cf1b7a13583bb029b4f70e1",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "c260c394137831b112c8dc758f17f81d0ca680f99b4388c5ac94dd6b3f024bc6"
+      },
+      {
+        "id": 19257,
+        "side": 0,
+        "seed": 905299311,
+        "grid": "20f457f074204a6afe8cef889acc571ab946ea7e883b581dd86c0fd3b641109b",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "46ab1ae263e19061185fbaaad4f55594a5834fc905eaa63b22eed26f5e781e73"
+      },
+      {
+        "id": 19263,
+        "side": 1,
+        "seed": 905299311,
+        "grid": "20f457f074204a6afe8cef889acc571ab946ea7e883b581dd86c0fd3b641109b",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "1e5f5ad714dbb7c3883b6fe2e632a359dc09bee86da820433bec6fd627494a6e"
+      },
+      {
+        "id": 14566,
+        "side": 0,
+        "seed": 714079,
+        "grid": "228ffb8f6419f434461ee8a40098d75ed9ed4839dfc5f5b369842f17120b25d2",
+        "version": "v-0081349ee9d189d06bc534ecdac22f731b4908714c90b45644a1962aea0583f5",
+        "sha256": "a03e21a641b285fde7a5adf8c7611a9ba6657620f59574fb127251ff601f3923"
+      },
+      {
+        "id": 14579,
+        "side": 1,
+        "seed": 714079,
+        "grid": "228ffb8f6419f434461ee8a40098d75ed9ed4839dfc5f5b369842f17120b25d2",
+        "version": "v-0081349ee9d189d06bc534ecdac22f731b4908714c90b45644a1962aea0583f5",
+        "sha256": "85a83b9214d32b72ff2a6ff3c0b91c85778ca24060d43846b2955972ea902642"
+      },
+      {
+        "id": 21798,
+        "side": 0,
+        "seed": 187754736,
+        "grid": "2369705ea2a2e5782c5185901f56fe6fba6cc9fdb9506502a3456c7fcf550ea8",
+        "version": "v-2b9dfa9a5fa442edd0b7b4c223228034fce69d5b4e94e416d8f763244dc7e825",
+        "sha256": "351cc659a8586be5a0c90bf7203b733e8015c0ca4c8798e545aa8c5afaef3171"
+      },
+      {
+        "id": 21829,
+        "side": 1,
+        "seed": 187754736,
+        "grid": "2369705ea2a2e5782c5185901f56fe6fba6cc9fdb9506502a3456c7fcf550ea8",
+        "version": "v-2b9dfa9a5fa442edd0b7b4c223228034fce69d5b4e94e416d8f763244dc7e825",
+        "sha256": "6ba46d17ce6a13767d3507db6d7582400dc94b10240947b177ec0d2c6244644e"
+      },
+      {
+        "id": 18577,
+        "side": 0,
+        "seed": 904147292,
+        "grid": "2739fdf085b807ee18657bb20511e2dcd273408df7b74841cfdbd4f4fcf9c067",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "7918145c45082d1a655befc41637d3f020db1931174f4b979937583a68a2bfdc"
+      },
+      {
+        "id": 18579,
+        "side": 1,
+        "seed": 904147292,
+        "grid": "2739fdf085b807ee18657bb20511e2dcd273408df7b74841cfdbd4f4fcf9c067",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "35a6ad3e41844627fcb18dd857c9993d713f4557514d1d945e8499ab677a7c54"
+      },
+      {
+        "id": 16366,
+        "side": 0,
+        "seed": 832035324,
+        "grid": "2976cbc0b50085fee983a5d271e51baa903f203541758b9d86edf664f7e2a346",
+        "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+        "sha256": "231dfe1a4c820d5da84aac7d930219d105861a37b09c4903dac06e139295e574"
+      },
+      {
+        "id": 16375,
+        "side": 1,
+        "seed": 832035324,
+        "grid": "2976cbc0b50085fee983a5d271e51baa903f203541758b9d86edf664f7e2a346",
+        "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+        "sha256": "a1e354a3947adeb83398d4e9f51f5c13430c93d68bf0b99a0499d7d4e023e9b7"
+      },
+      {
+        "id": 20753,
+        "side": 0,
+        "seed": 907289162,
+        "grid": "2cbdcee9e57ebf51ea4d41f5767bce2f82b3e1d1bda8d1a85c6ba91803b9a05e",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "2f6397576d36b7aeee971c9a8f3e9e7bb3d31e234e557f20a3c054d151cc6691"
+      },
+      {
+        "id": 20758,
+        "side": 1,
+        "seed": 907289162,
+        "grid": "2cbdcee9e57ebf51ea4d41f5767bce2f82b3e1d1bda8d1a85c6ba91803b9a05e",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "a1e052c6da9929c5a0e19367e79c927a9e299c2a21bc24dbdd064b67dcc67e42"
+      },
+      {
+        "id": 16587,
+        "side": 0,
+        "seed": 832349511,
+        "grid": "2f644b78e368c32f9a6628107df83ff50c1234171d82bbfa571c8712c18cc2b3",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "3481ad405940b2b61a2cd31e4e678acddae21cbb9651151ef1259a205f6869ea"
+      },
+      {
+        "id": 16595,
+        "side": 1,
+        "seed": 832349511,
+        "grid": "2f644b78e368c32f9a6628107df83ff50c1234171d82bbfa571c8712c18cc2b3",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "ac7669579c8172f81e8cb1d930d5d3ea0783312b07dfbe2fbc9b3268272ee58e"
+      },
+      {
+        "id": 17962,
+        "side": 0,
+        "seed": 903100002,
+        "grid": "30d70f193b69ef8d492cfb719aa6d3f1930c21605e7944be57b4061070bc0e31",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "579af71751291428107dd9e1e15fbf9c8c1d13acfc574824d1e0b6246ce7f25c"
+      },
+      {
+        "id": 17966,
+        "side": 1,
+        "seed": 903100002,
+        "grid": "30d70f193b69ef8d492cfb719aa6d3f1930c21605e7944be57b4061070bc0e31",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "4a6eea091804e261ee32174f26159300b51e145eae9ec2e78566ebee5a78af99"
+      },
+      {
+        "id": 16259,
+        "side": 0,
+        "seed": 831825866,
+        "grid": "3967aad6819aa9f25593ec01608988ff7f2a472141ebe35aaaebe813c53d83df",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "708086c2d2eeb737f68bd244b20564dcf22a49e5ca37025860388a1f46f5f255"
+      },
+      {
+        "id": 16263,
+        "side": 1,
+        "seed": 831825866,
+        "grid": "3967aad6819aa9f25593ec01608988ff7f2a472141ebe35aaaebe813c53d83df",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "432696bb163f7b623a0013c102921aaacbf89ddc2379a092403361c10bbba95e"
+      },
+      {
+        "id": 18935,
+        "side": 0,
+        "seed": 904775666,
+        "grid": "3c3682f1f418c32a1d431e965ecfd54862653bfc69d5255df78502a878ca17b6",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "46f35740f8eb03c278dda00bed4f480d2687f77c78e704e273955459f6129910"
+      },
+      {
+        "id": 18941,
+        "side": 1,
+        "seed": 904775666,
+        "grid": "3c3682f1f418c32a1d431e965ecfd54862653bfc69d5255df78502a878ca17b6",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "9975b485882406c971b8a29676512e185712a1a45d8fa03693b43f87c5fca097"
+      },
+      {
+        "id": 22503,
+        "side": 0,
+        "seed": 908964826,
+        "grid": "3f24d31c53acdb36fd5e9d6ce6d0bc3ff6f46e048882955fc0a4d94f27cd3585",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "3569b42c113d2d25c10f0ea5f80359df4cad4b5ec33b4f2b21eff11c91a58ed1"
+      },
+      {
+        "id": 22522,
+        "side": 1,
+        "seed": 908964826,
+        "grid": "3f24d31c53acdb36fd5e9d6ce6d0bc3ff6f46e048882955fc0a4d94f27cd3585",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "f1797f17af96255f1debf3a3bed3fce1e4d7224ea8b19dff272b195ff048c7a2"
+      },
+      {
+        "id": 22433,
+        "side": 0,
+        "seed": 908860097,
+        "grid": "411a8f8bfceb62cd2e8eb259f9c4c9be2440f8b2395877ceab401aae80aa642f",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "471748c34376d5b21c1c85090d978752f465ca1730d501f67adea65d018ddaa7"
+      },
+      {
+        "id": 22454,
+        "side": 1,
+        "seed": 908860097,
+        "grid": "411a8f8bfceb62cd2e8eb259f9c4c9be2440f8b2395877ceab401aae80aa642f",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "348c543413d5f94ec83c9224b31a94c6474fa59943c3ba5c614230c396f0f50e"
+      },
+      {
+        "id": 14333,
+        "side": 0,
+        "seed": 44917,
+        "grid": "472b8518f7df2f34e2fe499bd1ae3ecd968325e5a355458f75c8c0a34096ddbd",
+        "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+        "sha256": "f4fcecbf8f988b7e7dcb7607b86724bcd24f8e47fb97c364c97b6f6ee9d9091e"
+      },
+      {
+        "id": 14336,
+        "side": 1,
+        "seed": 44917,
+        "grid": "472b8518f7df2f34e2fe499bd1ae3ecd968325e5a355458f75c8c0a34096ddbd",
+        "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+        "sha256": "7d0edab02014ab6177c949dc9d5f1cd20e56e1f8fdf91525a9f1c6c94de480d8"
+      },
+      {
+        "id": 18068,
+        "side": 0,
+        "seed": 903309460,
+        "grid": "50d5bca657467a4532a39080b3919f249c8937c5efddd2064a09db14f2206bb2",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "bca6a044439a5d3f70a5b8c8b2e56812e80b10472f0bf013a5caae18d61ee78f"
+      },
+      {
+        "id": 18076,
+        "side": 1,
+        "seed": 903309460,
+        "grid": "50d5bca657467a4532a39080b3919f249c8937c5efddd2064a09db14f2206bb2",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "9a899e075e7f3547004d2862bcd7f94a8bf5cbda4e674ab848dfe2e1efe84f80"
+      },
+      {
+        "id": 21325,
+        "side": 0,
+        "seed": 907917536,
+        "grid": "53d4961a2b8f0ef75b10b5f2ab39e716db3f44e4fbdbf9aae521140078d4f78e",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "0f04c19c74ec13567190def2a95f4ac768215d50fb0a854243ee2959677e7cbe"
+      },
+      {
+        "id": 21331,
+        "side": 1,
+        "seed": 907917536,
+        "grid": "53d4961a2b8f0ef75b10b5f2ab39e716db3f44e4fbdbf9aae521140078d4f78e",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "8b051ddfab2eab751b6fe715b98bb69684cbd7e90c4685221996b36e2e2d054b"
+      },
+      {
+        "id": 18606,
+        "side": 0,
+        "seed": 904252021,
+        "grid": "53da01d26affcc1eae1dfc73214081280380b248caaa2bf55649114c770aae7b",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "c05d96204fb0b0d94b2d0dd27d821257b0bacaa8fe3a6023a98bfeeed2ce6608"
+      },
+      {
+        "id": 18610,
+        "side": 1,
+        "seed": 904252021,
+        "grid": "53da01d26affcc1eae1dfc73214081280380b248caaa2bf55649114c770aae7b",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "370a6767aca85d5b38b09ca96f95b8081bc01ae26371d759311ef5704bb045e7"
+      },
+      {
+        "id": 14544,
+        "side": 0,
+        "seed": 713053,
+        "grid": "55bbee9830ea513067877e51e3e62e73c70e692b718def3b30eecea25edde07c",
+        "version": "v-f7fbd3db4d9778f45ba356ab6fdd7d17f675fe44a110e1f2ec08282bf55ad8f4",
+        "sha256": "e86855e1d62a606347ec3a7f7dcf3a31780fcb4c6afa70fbdc0bbaf861624ef4"
+      },
+      {
+        "id": 14548,
+        "side": 1,
+        "seed": 713053,
+        "grid": "55bbee9830ea513067877e51e3e62e73c70e692b718def3b30eecea25edde07c",
+        "version": "v-f7fbd3db4d9778f45ba356ab6fdd7d17f675fe44a110e1f2ec08282bf55ad8f4",
+        "sha256": "a6960a7818bdc9434b7e069c394507e1c4b686142a8c9c4f03f098a008746203"
+      },
+      {
+        "id": 14219,
+        "side": 0,
+        "seed": 8107,
+        "grid": "617ccd243efa67824685fc2eca87c13f64456b97a6f1d5a3102db2bf8bc03318",
+        "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+        "sha256": "45cda269e27d6414d423120f0952495d6517dd4278526a29d2acaa06786227c7"
+      },
+      {
+        "id": 14226,
+        "side": 1,
+        "seed": 8107,
+        "grid": "617ccd243efa67824685fc2eca87c13f64456b97a6f1d5a3102db2bf8bc03318",
+        "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+        "sha256": "8a1a10b3a52f67035590f49f1629813da8a1211074273702067d5ae62abefb31"
+      },
+      {
+        "id": 19598,
+        "side": 0,
+        "seed": 905822956,
+        "grid": "62c32dfe4df6ce07b627ab78d8870625539f3312600f4d99a7207c8a1b0acfde",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "79f8bcde5b3500381b702d8729bdda63f4f3e857378ec5715bba8401a10e5791"
+      },
+      {
+        "id": 19605,
+        "side": 1,
+        "seed": 905822956,
+        "grid": "62c32dfe4df6ce07b627ab78d8870625539f3312600f4d99a7207c8a1b0acfde",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "580d3f5c8cdaee7601e772bc00f63670d5e8fd411803e0d6b02ed61e9a9e607e"
+      },
+      {
+        "id": 19726,
+        "side": 0,
+        "seed": 906032414,
+        "grid": "631888be927575dadd63fcea26901f3ebe0e67401abc2d37f8540e98ef97b207",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "f9d044257c1774a2434339e5961da283e60b9703547109eb413d57231b80faa7"
+      },
+      {
+        "id": 19733,
+        "side": 1,
+        "seed": 906032414,
+        "grid": "631888be927575dadd63fcea26901f3ebe0e67401abc2d37f8540e98ef97b207",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "46036c22d62f84dad98ae514f00b87b912e2f38d1e100e98b48f20c7d0aa4e3e"
+      },
+      {
+        "id": 16821,
+        "side": 0,
+        "seed": 832663698,
+        "grid": "66e80642b96649cd10344186ced0b740aaa9f6291d51d02164cfbfc95dcd91f9",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "f11e2b9c0d5043de569bf53b3a7c60d4a28c3f086f18be322787e7db260f3d3e"
+      },
+      {
+        "id": 16825,
+        "side": 1,
+        "seed": 832663698,
+        "grid": "66e80642b96649cd10344186ced0b740aaa9f6291d51d02164cfbfc95dcd91f9",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "ab38e5a2586011447a3b2bc842c28431c18b6e08619e63b97e6857d15f3a199e"
+      },
+      {
+        "id": 20977,
+        "side": 0,
+        "seed": 907498620,
+        "grid": "67fcccc33a2aef9dee6a9f25d1f02eb9328faa8afddc68b21d56d5124e23e7dc",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "36abedd6d696ded27684bfa129a6435c4613cde7ef280905cf8d199dc8fc1827"
+      },
+      {
+        "id": 20987,
+        "side": 1,
+        "seed": 907498620,
+        "grid": "67fcccc33a2aef9dee6a9f25d1f02eb9328faa8afddc68b21d56d5124e23e7dc",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "78d85d95f8c0c7f34454a3f1b4d6102fe5de49a14d18da46de435d1494d7f163"
+      },
+      {
+        "id": 18853,
+        "side": 0,
+        "seed": 904670937,
+        "grid": "6a31a5949b2aad0326722db15d45a5635dcd8d3205a8080ffd7c423c1d45dac5",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "498e025a5ceb76f7783d4de9bf2e1f62c8c45aef7296ca6294f76b4d320951dc"
+      },
+      {
+        "id": 18861,
+        "side": 1,
+        "seed": 904670937,
+        "grid": "6a31a5949b2aad0326722db15d45a5635dcd8d3205a8080ffd7c423c1d45dac5",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "a4d0075f21aa8059f87fdceb0faa0d78c0685094a47400416d57b6a5799bda2e"
+      },
+      {
+        "id": 20417,
+        "side": 0,
+        "seed": 906870246,
+        "grid": "6cec21d2c3d82f9154c5ab33fcc9b0ede4d7cd95e678aab43349b305db0c5849",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "2da3cc3cc3f3fc4a30343960e82f66403bcd6339cd78351bb2f7ef5b717e184f"
+      },
+      {
+        "id": 20420,
+        "side": 1,
+        "seed": 906870246,
+        "grid": "6cec21d2c3d82f9154c5ab33fcc9b0ede4d7cd95e678aab43349b305db0c5849",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "97c974bbb461bb5ffef307b8ed8b0cba37fbffe845557b06a9a3b2e1523d2235"
+      },
+      {
+        "id": 21600,
+        "side": 0,
+        "seed": 908441181,
+        "grid": "6ebc671acea7cba3546f668a7f114fdb559dccda96d2d3059100468d4085bc91",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "c10e0243c67db2a03391a5a826bdb53f6eb865c29fa95934f94ce0c6e7354671"
+      },
+      {
+        "id": 21605,
+        "side": 1,
+        "seed": 908441181,
+        "grid": "6ebc671acea7cba3546f668a7f114fdb559dccda96d2d3059100468d4085bc91",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "340adeaaee12c8288deaeb0c60f2bd7c8d74f223d385745731cab19ae6119de6"
+      }
+    ],
+    "sdk_rookie": [
+      {
+        "id": "sdk-2065198339-0",
+        "side": 0,
+        "seed": 2065198339,
+        "grid": "6a651604bba5450f6b6a59f961c3166a5320fd512100ae8e22f2a0608d716704",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 7555871818676773
+      },
+      {
+        "id": "sdk-2065198339-1",
+        "side": 1,
+        "seed": 2065198339,
+        "grid": "6a651604bba5450f6b6a59f961c3166a5320fd512100ae8e22f2a0608d716704",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 3937574762390743794
+      },
+      {
+        "id": "sdk-844349050-0",
+        "side": 0,
+        "seed": 844349050,
+        "grid": "372f96e73c5247852c240e859ee3d4af06b52089f2eea24ca5b61678c4713bf8",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 3908122532420362822
+      },
+      {
+        "id": "sdk-844349050-1",
+        "side": 1,
+        "seed": 844349050,
+        "grid": "372f96e73c5247852c240e859ee3d4af06b52089f2eea24ca5b61678c4713bf8",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 17737374027410901977
+      },
+      {
+        "id": "sdk-621131878-0",
+        "side": 0,
+        "seed": 621131878,
+        "grid": "a475fc8f7d679abed4eb9950e66d2ebdbdda2cb7a901f3d82d7aa5f1510673f8",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 9387318248084811563
+      },
+      {
+        "id": "sdk-621131878-1",
+        "side": 1,
+        "seed": 621131878,
+        "grid": "a475fc8f7d679abed4eb9950e66d2ebdbdda2cb7a901f3d82d7aa5f1510673f8",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 4191518686908112815
+      },
+      {
+        "id": "sdk-1846374990-0",
+        "side": 0,
+        "seed": 1846374990,
+        "grid": "6e014308fcc495e66c17f1d002613927f493af1255d4a346f6a66351a432c032",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 17549830312829412401
+      },
+      {
+        "id": "sdk-1846374990-1",
+        "side": 1,
+        "seed": 1846374990,
+        "grid": "6e014308fcc495e66c17f1d002613927f493af1255d4a346f6a66351a432c032",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 792488666329021823
+      },
+      {
+        "id": "sdk-1087286793-0",
+        "side": 0,
+        "seed": 1087286793,
+        "grid": "361c70a99e1c1fceca6a1e7f583d692b75dabcda2fb67780c7188a36d784cd59",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 12150841383045216399
+      },
+      {
+        "id": "sdk-1087286793-1",
+        "side": 1,
+        "seed": 1087286793,
+        "grid": "361c70a99e1c1fceca6a1e7f583d692b75dabcda2fb67780c7188a36d784cd59",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 17883286016988017120
+      },
+      {
+        "id": "sdk-1616433551-0",
+        "side": 0,
+        "seed": 1616433551,
+        "grid": "843f37d2600f62abc9b4f215cd74a968e289d0426c0a761af5747bcc65a7fe63",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 3844102841845871171
+      },
+      {
+        "id": "sdk-1616433551-1",
+        "side": 1,
+        "seed": 1616433551,
+        "grid": "843f37d2600f62abc9b4f215cd74a968e289d0426c0a761af5747bcc65a7fe63",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 15302148167496808172
+      },
+      {
+        "id": "sdk-771923802-0",
+        "side": 0,
+        "seed": 771923802,
+        "grid": "e9b940b28d0d97ffd3a968e11ec901c58c6d2e5add9522d65c8a486ec01a9068",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 6345138113515880991
+      },
+      {
+        "id": "sdk-771923802-1",
+        "side": 1,
+        "seed": 771923802,
+        "grid": "e9b940b28d0d97ffd3a968e11ec901c58c6d2e5add9522d65c8a486ec01a9068",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 123475358323663683
+      },
+      {
+        "id": "sdk-899521138-0",
+        "side": 0,
+        "seed": 899521138,
+        "grid": "e8d139ae916b5faf2f271e93cbc07353f3408d61f9f6a89b79373acf37622abd",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 1530974347910088220
+      },
+      {
+        "id": "sdk-899521138-1",
+        "side": 1,
+        "seed": 899521138,
+        "grid": "e8d139ae916b5faf2f271e93cbc07353f3408d61f9f6a89b79373acf37622abd",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 6697840186028032729
+      },
+      {
+        "id": "sdk-984328774-0",
+        "side": 0,
+        "seed": 984328774,
+        "grid": "2f9511ef89332cf0d8d2d350c5e04b2dcece34de54793727ac4914ca912b8c10",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 14720912788421759258
+      },
+      {
+        "id": "sdk-984328774-1",
+        "side": 1,
+        "seed": 984328774,
+        "grid": "2f9511ef89332cf0d8d2d350c5e04b2dcece34de54793727ac4914ca912b8c10",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 12699237942613614674
+      },
+      {
+        "id": "sdk-958598688-0",
+        "side": 0,
+        "seed": 958598688,
+        "grid": "061e1c3992196048234837bf37d6578743f5c13967a053385ab0c5eb7bb321e6",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 16296943454879112528
+      },
+      {
+        "id": "sdk-958598688-1",
+        "side": 1,
+        "seed": 958598688,
+        "grid": "061e1c3992196048234837bf37d6578743f5c13967a053385ab0c5eb7bb321e6",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 16332351763575279057
+      },
+      {
+        "id": "sdk-281874420-0",
+        "side": 0,
+        "seed": 281874420,
+        "grid": "086fe774efda7e0fed5d33718bcf0a2a29e86d32ae44a5e29202815f78c8ebb9",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 11128671466152578513
+      },
+      {
+        "id": "sdk-281874420-1",
+        "side": 1,
+        "seed": 281874420,
+        "grid": "086fe774efda7e0fed5d33718bcf0a2a29e86d32ae44a5e29202815f78c8ebb9",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 4409352970996186087
+      },
+      {
+        "id": "sdk-1264593602-0",
+        "side": 0,
+        "seed": 1264593602,
+        "grid": "369a53f281a16671079792e1dc3a2184fcf89758f5ccced747792b6176ba6c45",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 10510074439063570600
+      },
+      {
+        "id": "sdk-1264593602-1",
+        "side": 1,
+        "seed": 1264593602,
+        "grid": "369a53f281a16671079792e1dc3a2184fcf89758f5ccced747792b6176ba6c45",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 14599886518939666945
+      },
+      {
+        "id": "sdk-945180030-0",
+        "side": 0,
+        "seed": 945180030,
+        "grid": "a7a92b98342f5a0c446a3c0a7c3793c645d055509b7dd713a467bf007e2565a5",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 3181468830328520447
+      },
+      {
+        "id": "sdk-945180030-1",
+        "side": 1,
+        "seed": 945180030,
+        "grid": "a7a92b98342f5a0c446a3c0a7c3793c645d055509b7dd713a467bf007e2565a5",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 9942327812741592441
+      },
+      {
+        "id": "sdk-1413493751-0",
+        "side": 0,
+        "seed": 1413493751,
+        "grid": "59f4ef1aa0be27c76155094550412488245a1d611fb84219eadb3ef9e2249af5",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 10954400367224640612
+      },
+      {
+        "id": "sdk-1413493751-1",
+        "side": 1,
+        "seed": 1413493751,
+        "grid": "59f4ef1aa0be27c76155094550412488245a1d611fb84219eadb3ef9e2249af5",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 5242723036810591212
+      },
+      {
+        "id": "sdk-1651287248-0",
+        "side": 0,
+        "seed": 1651287248,
+        "grid": "7da9f03a70269af5d72c8e202e7de9a81c5feb2abd16d6064b50b29eabf34e31",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 12281400346316964242
+      },
+      {
+        "id": "sdk-1651287248-1",
+        "side": 1,
+        "seed": 1651287248,
+        "grid": "7da9f03a70269af5d72c8e202e7de9a81c5feb2abd16d6064b50b29eabf34e31",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 1018039603914842125
+      },
+      {
+        "id": "sdk-763654617-0",
+        "side": 0,
+        "seed": 763654617,
+        "grid": "5b33c8a77e39296ac857a63c6d395ba534464065a56dd7becf161f023d1f7d10",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 10657963962349330288
+      },
+      {
+        "id": "sdk-763654617-1",
+        "side": 1,
+        "seed": 763654617,
+        "grid": "5b33c8a77e39296ac857a63c6d395ba534464065a56dd7becf161f023d1f7d10",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 16893768473613301092
+      },
+      {
+        "id": "sdk-1280028378-0",
+        "side": 0,
+        "seed": 1280028378,
+        "grid": "033fb99e13f0732f30c25109684df78501810fd2bfcf69bf76febb92d4ab4c79",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 11915875163443648554
+      },
+      {
+        "id": "sdk-1280028378-1",
+        "side": 1,
+        "seed": 1280028378,
+        "grid": "033fb99e13f0732f30c25109684df78501810fd2bfcf69bf76febb92d4ab4c79",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 7096832714483729202
+      },
+      {
+        "id": "sdk-2033342722-0",
+        "side": 0,
+        "seed": 2033342722,
+        "grid": "aa0d0452cf0dcf7bf18b79a2d7cf1c317b931ccb1d1aeeeaf79024ecb292bd28",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 15873556435471013682
+      },
+      {
+        "id": "sdk-2033342722-1",
+        "side": 1,
+        "seed": 2033342722,
+        "grid": "aa0d0452cf0dcf7bf18b79a2d7cf1c317b931ccb1d1aeeeaf79024ecb292bd28",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 14474626258321074328
+      },
+      {
+        "id": "sdk-1907871101-0",
+        "side": 0,
+        "seed": 1907871101,
+        "grid": "83e8e00d0bf7660dce0d1811e1550ee3aa6d2dd0e7296178c0676ad0c4814cb6",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 16683016864828499800
+      },
+      {
+        "id": "sdk-1907871101-1",
+        "side": 1,
+        "seed": 1907871101,
+        "grid": "83e8e00d0bf7660dce0d1811e1550ee3aa6d2dd0e7296178c0676ad0c4814cb6",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 5836162396108709688
+      },
+      {
+        "id": "sdk-1492793626-0",
+        "side": 0,
+        "seed": 1492793626,
+        "grid": "2adb138491a486e4ea1fa0a319d331a34ed6c7fe6ec9b5e4e146c86bff27ca9f",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 16890484647231751302
+      },
+      {
+        "id": "sdk-1492793626-1",
+        "side": 1,
+        "seed": 1492793626,
+        "grid": "2adb138491a486e4ea1fa0a319d331a34ed6c7fe6ec9b5e4e146c86bff27ca9f",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 179622674589105101
+      },
+      {
+        "id": "sdk-151255267-0",
+        "side": 0,
+        "seed": 151255267,
+        "grid": "84badbb9922f105a7cc6c928f7f94692eed3140cec7a86b1017bde5fa795fe14",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 3316985278546286857
+      },
+      {
+        "id": "sdk-151255267-1",
+        "side": 1,
+        "seed": 151255267,
+        "grid": "84badbb9922f105a7cc6c928f7f94692eed3140cec7a86b1017bde5fa795fe14",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 11612379107890217606
+      },
+      {
+        "id": "sdk-1953363869-0",
+        "side": 0,
+        "seed": 1953363869,
+        "grid": "c9fa9b5ccd59851b5d59952d7f5cfb8a749411ad1c053850e502042412e8fa3c",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 5617806872125775125
+      },
+      {
+        "id": "sdk-1953363869-1",
+        "side": 1,
+        "seed": 1953363869,
+        "grid": "c9fa9b5ccd59851b5d59952d7f5cfb8a749411ad1c053850e502042412e8fa3c",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 1149833140035572229
+      },
+      {
+        "id": "sdk-164752998-0",
+        "side": 0,
+        "seed": 164752998,
+        "grid": "d54546a85e1a8ac0af825ddf471acceb16808b099f1574851e8b21b4226e68ad",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 18437323811622406740
+      },
+      {
+        "id": "sdk-164752998-1",
+        "side": 1,
+        "seed": 164752998,
+        "grid": "d54546a85e1a8ac0af825ddf471acceb16808b099f1574851e8b21b4226e68ad",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 3323395836835499470
+      },
+      {
+        "id": "sdk-807305287-0",
+        "side": 0,
+        "seed": 807305287,
+        "grid": "adbb2724e1a219e67ba8f1a29c8c2e3217a6ef299a0981209167d0729629532b",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 44122452204483175
+      },
+      {
+        "id": "sdk-807305287-1",
+        "side": 1,
+        "seed": 807305287,
+        "grid": "adbb2724e1a219e67ba8f1a29c8c2e3217a6ef299a0981209167d0729629532b",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 7454291393660557652
+      },
+      {
+        "id": "sdk-568765219-0",
+        "side": 0,
+        "seed": 568765219,
+        "grid": "7408a8c108002b93be4a4d044b0a4b75314f984cc471742c8fdc944f98d42059",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 10796594688647909408
+      },
+      {
+        "id": "sdk-568765219-1",
+        "side": 1,
+        "seed": 568765219,
+        "grid": "7408a8c108002b93be4a4d044b0a4b75314f984cc471742c8fdc944f98d42059",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 3255409754625464110
+      },
+      {
+        "id": "sdk-1804654557-0",
+        "side": 0,
+        "seed": 1804654557,
+        "grid": "cca1ee8b2f6ed6b03c12f76b7c3bc0e1b7a68dce2355bc5a73a6faf409d7a14a",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 17145830812278033648
+      },
+      {
+        "id": "sdk-1804654557-1",
+        "side": 1,
+        "seed": 1804654557,
+        "grid": "cca1ee8b2f6ed6b03c12f76b7c3bc0e1b7a68dce2355bc5a73a6faf409d7a14a",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 11667077165720790659
+      },
+      {
+        "id": "sdk-711461146-0",
+        "side": 0,
+        "seed": 711461146,
+        "grid": "2202674b6b8c9f96576d4c04d3dfb46bdced7fd17532d0b8be316d198202a3ad",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 13390560990105774781
+      },
+      {
+        "id": "sdk-711461146-1",
+        "side": 1,
+        "seed": 711461146,
+        "grid": "2202674b6b8c9f96576d4c04d3dfb46bdced7fd17532d0b8be316d198202a3ad",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 3463598427887739151
+      },
+      {
+        "id": "sdk-1942780880-0",
+        "side": 0,
+        "seed": 1942780880,
+        "grid": "a81dd278baf192c92028bd750c195b551ab8cc467fac2a3658cc30e1b62f8920",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 4325114062822915963
+      },
+      {
+        "id": "sdk-1942780880-1",
+        "side": 1,
+        "seed": 1942780880,
+        "grid": "a81dd278baf192c92028bd750c195b551ab8cc467fac2a3658cc30e1b62f8920",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 972160862259798745
+      },
+      {
+        "id": "sdk-1292576566-0",
+        "side": 0,
+        "seed": 1292576566,
+        "grid": "6aac1adcc95172a0dcbd6827c7a518922dfe05545a30bc9af19c3c77012be243",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 14577764919141016097
+      },
+      {
+        "id": "sdk-1292576566-1",
+        "side": 1,
+        "seed": 1292576566,
+        "grid": "6aac1adcc95172a0dcbd6827c7a518922dfe05545a30bc9af19c3c77012be243",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 527262972055902547
+      },
+      {
+        "id": "sdk-1923187873-0",
+        "side": 0,
+        "seed": 1923187873,
+        "grid": "9b7e1857d7020411c9abc58d8f64ea708101a19946b252362dc72a471c59be3f",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 2142867221207233242
+      },
+      {
+        "id": "sdk-1923187873-1",
+        "side": 1,
+        "seed": 1923187873,
+        "grid": "9b7e1857d7020411c9abc58d8f64ea708101a19946b252362dc72a471c59be3f",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 17627811037274428949
+      },
+      {
+        "id": "sdk-197846802-0",
+        "side": 0,
+        "seed": 197846802,
+        "grid": "a72d070c9513ea28a12133ca5b3d5b14ebeeca8d041b91b69587628331dded7b",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 13884445612935666523
+      },
+      {
+        "id": "sdk-197846802-1",
+        "side": 1,
+        "seed": 197846802,
+        "grid": "a72d070c9513ea28a12133ca5b3d5b14ebeeca8d041b91b69587628331dded7b",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 13181967958563713820
+      },
+      {
+        "id": "sdk-368689739-0",
+        "side": 0,
+        "seed": 368689739,
+        "grid": "c47f4fbafeba2ffb9d5e7cbee80c40d766c1acfec4f5d125712ad1faffa3da3c",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 8343560940085512526
+      },
+      {
+        "id": "sdk-368689739-1",
+        "side": 1,
+        "seed": 368689739,
+        "grid": "c47f4fbafeba2ffb9d5e7cbee80c40d766c1acfec4f5d125712ad1faffa3da3c",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 4641670377534004877
+      },
+      {
+        "id": "sdk-1909137215-0",
+        "side": 0,
+        "seed": 1909137215,
+        "grid": "bfe1150c2b47bb6a99a794c1e272316dbdccf12392f38f5c45e2532ed1994ccc",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 6754801980294296581
+      },
+      {
+        "id": "sdk-1909137215-1",
+        "side": 1,
+        "seed": 1909137215,
+        "grid": "bfe1150c2b47bb6a99a794c1e272316dbdccf12392f38f5c45e2532ed1994ccc",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 11849469568414254871
+      },
+      {
+        "id": "sdk-663721100-0",
+        "side": 0,
+        "seed": 663721100,
+        "grid": "4ef7920c2d7e10a07ac6e2646918878ead86f1a971fc5125f930f39b74ba4c69",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 13715851557129346837
+      },
+      {
+        "id": "sdk-663721100-1",
+        "side": 1,
+        "seed": 663721100,
+        "grid": "4ef7920c2d7e10a07ac6e2646918878ead86f1a971fc5125f930f39b74ba4c69",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 15079197015390717421
+      },
+      {
+        "id": "sdk-929243686-0",
+        "side": 0,
+        "seed": 929243686,
+        "grid": "d330915a2a31dec855a20a49b9f1c0dde5b1540e8288bd1a8e8d88579ce2b6df",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 17114002125919917267
+      },
+      {
+        "id": "sdk-929243686-1",
+        "side": 1,
+        "seed": 929243686,
+        "grid": "d330915a2a31dec855a20a49b9f1c0dde5b1540e8288bd1a8e8d88579ce2b6df",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 2926517622580006431
+      },
+      {
+        "id": "sdk-276369205-0",
+        "side": 0,
+        "seed": 276369205,
+        "grid": "0df8f69463aadd6d850f5e9ff26b91b19656f49cd686c65497690ef047eac49c",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 13155942030819233007
+      },
+      {
+        "id": "sdk-276369205-1",
+        "side": 1,
+        "seed": 276369205,
+        "grid": "0df8f69463aadd6d850f5e9ff26b91b19656f49cd686c65497690ef047eac49c",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 582498346092271903
+      }
+    ]
+  },
+  "holdout": {
+    "official_boss": [
+      {
+        "id": 18788,
+        "side": 0,
+        "seed": 904566208,
+        "grid": "6f273275c34ad5c67c4e774d8ee0e7390ce469e2a37732f5df6d00da9b9724ba",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "0528a83fb49da622f18e7d802d785a14216e8f6f9a3ea236d3cc6787421e2eeb"
+      },
+      {
+        "id": 18796,
+        "side": 1,
+        "seed": 904566208,
+        "grid": "6f273275c34ad5c67c4e774d8ee0e7390ce469e2a37732f5df6d00da9b9724ba",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "103ed097e4ec6c1937fd3a421cf150403158e4cd452301c4761602f095235a0c"
+      },
+      {
+        "id": 16729,
+        "side": 0,
+        "seed": 832558969,
+        "grid": "71cca9a969985c285cd0ebed01a4a3699a0086d4f390b97452fafdffbc0d6b78",
+        "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+        "sha256": "e8d1731145f704f9803953d8f9d749c3b4fd1ca219c212e5cfc85f3b45d2220a"
+      },
+      {
+        "id": 16739,
+        "side": 1,
+        "seed": 832558969,
+        "grid": "71cca9a969985c285cd0ebed01a4a3699a0086d4f390b97452fafdffbc0d6b78",
+        "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+        "sha256": "1692a42797bcbf5493bb723db1ccc9ca664fab1a140afe31670d74443d2610fa"
+      },
+      {
+        "id": 20071,
+        "side": 0,
+        "seed": 906451330,
+        "grid": "78f6fcb89965a3a254a5038aca38614fb7be9af08c8b461a72377f6b7e349019",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "7b9c8baf2f938e320a1d22839c361a8f941e3341d92ba76219a5f8469eac435c"
+      },
+      {
+        "id": 20076,
+        "side": 1,
+        "seed": 906451330,
+        "grid": "78f6fcb89965a3a254a5038aca38614fb7be9af08c8b461a72377f6b7e349019",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "0486b3261733f6b1aeb0e48d4e29d0a26623f62ea7e9127b216185e96fdff5ad"
+      },
+      {
+        "id": 22089,
+        "side": 0,
+        "seed": 908545910,
+        "grid": "7a2f3366598a03637b368e610b4bc46f5991ba7a058da27dae2165ef319a3cd9",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "da69f700e4d47021d878c8e91ae8973fcdaebec44e2084b5e46684bd0bb7d49a"
+      },
+      {
+        "id": 22101,
+        "side": 1,
+        "seed": 908545910,
+        "grid": "7a2f3366598a03637b368e610b4bc46f5991ba7a058da27dae2165ef319a3cd9",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "c6303fbdd9cf1d24a5c21c9beab080d8659e860283d491d39957c6d947bc1c4f"
+      },
+      {
+        "id": 18385,
+        "side": 0,
+        "seed": 903833105,
+        "grid": "8430a9c01d023095f0b0f619de24e8268bae382333453d68c209ef73b7a53516",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "6718357488e0b7a62a32e9b0189d8bcd431bccfc055316ec6b8558d7a5a4bda5"
+      },
+      {
+        "id": 18390,
+        "side": 1,
+        "seed": 903833105,
+        "grid": "8430a9c01d023095f0b0f619de24e8268bae382333453d68c209ef73b7a53516",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "477ce446df4fb8fe9d47b1c645b3f583722eae9418e68d1e3280f4ced9145c62"
+      },
+      {
+        "id": 16460,
+        "side": 0,
+        "seed": 832140053,
+        "grid": "8457131ba22276c3ce7cfe86d7d43dbd85fda40ab01686bbd623637d006b6b3b",
+        "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+        "sha256": "0a8387119617d263e5b89cba26ab3256313e2bf22a07f9af352b08183e27612f"
+      },
+      {
+        "id": 16468,
+        "side": 1,
+        "seed": 832140053,
+        "grid": "8457131ba22276c3ce7cfe86d7d43dbd85fda40ab01686bbd623637d006b6b3b",
+        "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+        "sha256": "fd92ecd5f03e5bfa3afbf12fd3364457367f78ef0f601b1426fc80a4fb2cb773"
+      },
+      {
+        "id": 22668,
+        "side": 0,
+        "seed": 909174284,
+        "grid": "86092d58b2bc5837900c548150534d03f1e69aa32d302e3711f85069d02bc5eb",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "85da76f1e98fa8ddb7d6c68f5284a159786ef53378bb22ffc12c2d05ed05bec0"
+      },
+      {
+        "id": 22687,
+        "side": 1,
+        "seed": 909174284,
+        "grid": "86092d58b2bc5837900c548150534d03f1e69aa32d302e3711f85069d02bc5eb",
+        "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+        "sha256": "382b366757e55baf2d044b629302162f9658e15aee8ac055eab6605bb96ea04b"
+      },
+      {
+        "id": 17233,
+        "side": 0,
+        "seed": 833292072,
+        "grid": "8c2db19a177e288520b4256537c77d4d0c305a97852d580f8259ec08513c40b2",
+        "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+        "sha256": "6e1ab2fe610531b25ec49be3d86dfead8af5133470439778f0e5e2d924e3d52a"
+      },
+      {
+        "id": 17241,
+        "side": 1,
+        "seed": 833292072,
+        "grid": "8c2db19a177e288520b4256537c77d4d0c305a97852d580f8259ec08513c40b2",
+        "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+        "sha256": "76716c772cc8556be374d2cc8a7fec1b8cd41f91862d890fe5a2b37118874cbc"
+      },
+      {
+        "id": 16528,
+        "side": 0,
+        "seed": 832244782,
+        "grid": "8fcacec010f1a78f40e76431fdb275d223faec60623d7e0ccf873758fbe96bfd",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "93ed7ea55a90ffe6cb9fdef9e443f24fbf5a894257e426543f57d5086d30af4b"
+      },
+      {
+        "id": 16534,
+        "side": 1,
+        "seed": 832244782,
+        "grid": "8fcacec010f1a78f40e76431fdb275d223faec60623d7e0ccf873758fbe96bfd",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "7bb60bec14a7c933d014aa15d6bfb434c80229db31091f33ed686b7e9fdf5218"
+      },
+      {
+        "id": 14613,
+        "side": 0,
+        "seed": 714091,
+        "grid": "8ff4bec680d6afbd6eda5ec34efe68e56aecc78b236a8d8bd3bb6e1346e51800",
+        "version": "v-0081349ee9d189d06bc534ecdac22f731b4908714c90b45644a1962aea0583f5",
+        "sha256": "29be4616ff6ba6634cc513225dead6650c869c75c14a4e286a7a32eaa9ff0d02"
+      },
+      {
+        "id": 14626,
+        "side": 1,
+        "seed": 714091,
+        "grid": "8ff4bec680d6afbd6eda5ec34efe68e56aecc78b236a8d8bd3bb6e1346e51800",
+        "version": "v-0081349ee9d189d06bc534ecdac22f731b4908714c90b45644a1962aea0583f5",
+        "sha256": "036d25d48adec222566e29f4a2ebd2cc57d0052c09ec7043daa06b0dc3b8f25f"
+      },
+      {
+        "id": 19980,
+        "side": 0,
+        "seed": 906346601,
+        "grid": "92299ff0a814074b5dfb057886e3187843ece6157f66fcb07fb506bbc16c88fd",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "347f38e00e86116b897c64eaf830134b515dc0fc6361d9b0d4a7855ceca7ec6b"
+      },
+      {
+        "id": 19987,
+        "side": 1,
+        "seed": 906346601,
+        "grid": "92299ff0a814074b5dfb057886e3187843ece6157f66fcb07fb506bbc16c88fd",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "17e4db3bbfb76ca03a8357ad15903ed34bbf0380d4b87a156a18fa2451f9bb2e"
+      },
+      {
+        "id": 17036,
+        "side": 0,
+        "seed": 832977885,
+        "grid": "957bfc310acb9c78c9231912ba56a1f1e5888771700a79115aaf7c8298568473",
+        "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+        "sha256": "038deff4a41e1fa92cd8b8180113c33c7faa55f38813e6ab0263f7a08faf5752"
+      },
+      {
+        "id": 17042,
+        "side": 1,
+        "seed": 832977885,
+        "grid": "957bfc310acb9c78c9231912ba56a1f1e5888771700a79115aaf7c8298568473",
+        "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+        "sha256": "2fd70036b7f3a5de06d280b9ba487b2222e7da1d3a9c429ccc770eb8f7097cce"
+      },
+      {
+        "id": 14180,
+        "side": 0,
+        "seed": 34729,
+        "grid": "9e00f8ec47bb71333165e9a9172afd32bfe12ac15e8c10091c58228ede48edda",
+        "version": "v-158cdc8b0d5723e857539c9adb429eef2bb7b9cffdc0e730c3e5af450c32ca68",
+        "sha256": "6ad6c7a1c95bb20382a2473d8edfaf0888c7d365cb97b04818ef301223db5984"
+      },
+      {
+        "id": 14184,
+        "side": 1,
+        "seed": 34729,
+        "grid": "9e00f8ec47bb71333165e9a9172afd32bfe12ac15e8c10091c58228ede48edda",
+        "version": "v-158cdc8b0d5723e857539c9adb429eef2bb7b9cffdc0e730c3e5af450c32ca68",
+        "sha256": "f6283bcc5ec43b5ebb3a594968e83ed7755d1a393f7e9b3e977b76602d02ce32"
+      },
+      {
+        "id": 18347,
+        "side": 0,
+        "seed": 903728376,
+        "grid": "a15f59c41a9720dc32bdb1fb7845723d823686868ffd233c7054609bfb4d02f7",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "ace48ccd535be85a16a28d9bd1eed2be7c5b1ed904ca65addabbe3096559c6f8"
+      },
+      {
+        "id": 18352,
+        "side": 1,
+        "seed": 903728376,
+        "grid": "a15f59c41a9720dc32bdb1fb7845723d823686868ffd233c7054609bfb4d02f7",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "3d9428d3e1655ce50ef6cf74392eeb44124df6275e8d065142bf0c7a00e3382e"
+      },
+      {
+        "id": 18455,
+        "side": 0,
+        "seed": 903937834,
+        "grid": "a4f9f087382642d8ef5566a84f6b7dd6b576d95fb639d00f78610d67f5b52a2e",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "e6c2bdec6d9d1d9c4ae7d7e5321739b26b55214dbbbec485ce87b50750e0d3a0"
+      },
+      {
+        "id": 18460,
+        "side": 1,
+        "seed": 903937834,
+        "grid": "a4f9f087382642d8ef5566a84f6b7dd6b576d95fb639d00f78610d67f5b52a2e",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "888c968b44766e0513e1eb6ba5b3f96ae1e498601474d5d94ebcf41af0d74cac"
+      },
+      {
+        "id": 19359,
+        "side": 0,
+        "seed": 905508769,
+        "grid": "a6f68693410880609895e7c5f839cf6c430a5191f2ea0a77285991d401e2c569",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "3d026b5729840765c0a892743e874daed50cb4cda6a02eb66130f361d5a50768"
+      },
+      {
+        "id": 19367,
+        "side": 1,
+        "seed": 905508769,
+        "grid": "a6f68693410880609895e7c5f839cf6c430a5191f2ea0a77285991d401e2c569",
+        "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+        "sha256": "a084370b3ee54d95554c7e6a400a1f7a13f3dff5a97ebeca13925f052ff3e42e"
+      }
+    ],
+    "sdk_rookie": [
+      {
+        "id": "sdk-940479389-0",
+        "side": 0,
+        "seed": 940479389,
+        "grid": "9e254d0f0958161d9090672f169365a1b41279251bc8a5058df0156fe2c360d4",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 12904445806561645875
+      },
+      {
+        "id": "sdk-940479389-1",
+        "side": 1,
+        "seed": 940479389,
+        "grid": "9e254d0f0958161d9090672f169365a1b41279251bc8a5058df0156fe2c360d4",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 3533436494249903105
+      },
+      {
+        "id": "sdk-1916084733-0",
+        "side": 0,
+        "seed": 1916084733,
+        "grid": "c72f03c8768f78177fdd1fc92b44875a972c0f374bcab8d80b225018168bdb38",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 5016670869301721955
+      },
+      {
+        "id": "sdk-1916084733-1",
+        "side": 1,
+        "seed": 1916084733,
+        "grid": "c72f03c8768f78177fdd1fc92b44875a972c0f374bcab8d80b225018168bdb38",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 7932038644538593294
+      },
+      {
+        "id": "sdk-1201649956-0",
+        "side": 0,
+        "seed": 1201649956,
+        "grid": "d5062a0f10637de0ba22003664fdee4fb9cc61917e494ad1d904d61155052f49",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 2496485941931976961
+      },
+      {
+        "id": "sdk-1201649956-1",
+        "side": 1,
+        "seed": 1201649956,
+        "grid": "d5062a0f10637de0ba22003664fdee4fb9cc61917e494ad1d904d61155052f49",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 6217270368450389692
+      },
+      {
+        "id": "sdk-1815720024-0",
+        "side": 0,
+        "seed": 1815720024,
+        "grid": "a20ff1a482746083705e3adf30d20d13d7089331716a3d39de00b8c8ee8c92a6",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 1630570776528488219
+      },
+      {
+        "id": "sdk-1815720024-1",
+        "side": 1,
+        "seed": 1815720024,
+        "grid": "a20ff1a482746083705e3adf30d20d13d7089331716a3d39de00b8c8ee8c92a6",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 6310685445112732043
+      },
+      {
+        "id": "sdk-303406941-0",
+        "side": 0,
+        "seed": 303406941,
+        "grid": "7aec95fa40f9056eee1587f5280925a953ea0c59ac74793d351073abc38a1b0a",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 16468830400344939007
+      },
+      {
+        "id": "sdk-303406941-1",
+        "side": 1,
+        "seed": 303406941,
+        "grid": "7aec95fa40f9056eee1587f5280925a953ea0c59ac74793d351073abc38a1b0a",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 13302905608309903849
+      },
+      {
+        "id": "sdk-2014288422-0",
+        "side": 0,
+        "seed": 2014288422,
+        "grid": "6bfc9ed6a3e9ec197d7545ced38b9eeaa74c7ad988e9ac50a62e8c217929794e",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 1778765520385540266
+      },
+      {
+        "id": "sdk-2014288422-1",
+        "side": 1,
+        "seed": 2014288422,
+        "grid": "6bfc9ed6a3e9ec197d7545ced38b9eeaa74c7ad988e9ac50a62e8c217929794e",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 12327013214793719
+      },
+      {
+        "id": "sdk-1654472744-0",
+        "side": 0,
+        "seed": 1654472744,
+        "grid": "f65966217cf9dd37fb93adf6db2b56ce1798e0a8bf19a1f99e097b924620e69a",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 2376020270037622828
+      },
+      {
+        "id": "sdk-1654472744-1",
+        "side": 1,
+        "seed": 1654472744,
+        "grid": "f65966217cf9dd37fb93adf6db2b56ce1798e0a8bf19a1f99e097b924620e69a",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 4392808677928224840
+      },
+      {
+        "id": "sdk-1146174335-0",
+        "side": 0,
+        "seed": 1146174335,
+        "grid": "244650ed16ab6ba9537661c63e9f4ccf04a568fd0aeee9b583474227dab034f4",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 12196658578337754303
+      },
+      {
+        "id": "sdk-1146174335-1",
+        "side": 1,
+        "seed": 1146174335,
+        "grid": "244650ed16ab6ba9537661c63e9f4ccf04a568fd0aeee9b583474227dab034f4",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 17625385671713016412
+      },
+      {
+        "id": "sdk-71214022-0",
+        "side": 0,
+        "seed": 71214022,
+        "grid": "636a7ceb0c8efc7b9e9b6a03c836f30f646c94b51744dc4342e6a60c7f8a4314",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 2707011419558527139
+      },
+      {
+        "id": "sdk-71214022-1",
+        "side": 1,
+        "seed": 71214022,
+        "grid": "636a7ceb0c8efc7b9e9b6a03c836f30f646c94b51744dc4342e6a60c7f8a4314",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 8775564648250467164
+      },
+      {
+        "id": "sdk-1026021232-0",
+        "side": 0,
+        "seed": 1026021232,
+        "grid": "9ff8b9c12cb0e6b0e98396b93f327f6331d56d7ff0bb266e34902d54c09174b9",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 9642261048286152733
+      },
+      {
+        "id": "sdk-1026021232-1",
+        "side": 1,
+        "seed": 1026021232,
+        "grid": "9ff8b9c12cb0e6b0e98396b93f327f6331d56d7ff0bb266e34902d54c09174b9",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 7089471621851964174
+      },
+      {
+        "id": "sdk-1591177238-0",
+        "side": 0,
+        "seed": 1591177238,
+        "grid": "b0271c721fbb8fc8550b62cac2837980ce9e26a2e394dcac5990f85dcc78ff64",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 15941959136448716140
+      },
+      {
+        "id": "sdk-1591177238-1",
+        "side": 1,
+        "seed": 1591177238,
+        "grid": "b0271c721fbb8fc8550b62cac2837980ce9e26a2e394dcac5990f85dcc78ff64",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 5321687123668467377
+      },
+      {
+        "id": "sdk-221252906-0",
+        "side": 0,
+        "seed": 221252906,
+        "grid": "15cb376fb712640c46e40f324f0874789dda6ab9bf502e9930f1ccae3bacbb9d",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 6554142798967973305
+      },
+      {
+        "id": "sdk-221252906-1",
+        "side": 1,
+        "seed": 221252906,
+        "grid": "15cb376fb712640c46e40f324f0874789dda6ab9bf502e9930f1ccae3bacbb9d",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 17148514859788697517
+      },
+      {
+        "id": "sdk-1827830443-0",
+        "side": 0,
+        "seed": 1827830443,
+        "grid": "3617df8917f8ac2ea8a85ee146365c357cefba9cccc585c88f05f1ea7ea133b9",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 8602265539144389116
+      },
+      {
+        "id": "sdk-1827830443-1",
+        "side": 1,
+        "seed": 1827830443,
+        "grid": "3617df8917f8ac2ea8a85ee146365c357cefba9cccc585c88f05f1ea7ea133b9",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 1358359409265401040
+      },
+      {
+        "id": "sdk-2093710187-0",
+        "side": 0,
+        "seed": 2093710187,
+        "grid": "62ce67f42fa75b27b4d9eab46658e7540dd40d5d30318c2ab156b38d96600a3d",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 6495545309090188889
+      },
+      {
+        "id": "sdk-2093710187-1",
+        "side": 1,
+        "seed": 2093710187,
+        "grid": "62ce67f42fa75b27b4d9eab46658e7540dd40d5d30318c2ab156b38d96600a3d",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 12100008504837512090
+      },
+      {
+        "id": "sdk-649067690-0",
+        "side": 0,
+        "seed": 649067690,
+        "grid": "2f38b05e527523cd6ca99559fbd7559b8c5742b5635238a1ca92e45d4a6dca12",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 5945827393741801027
+      },
+      {
+        "id": "sdk-649067690-1",
+        "side": 1,
+        "seed": 649067690,
+        "grid": "2f38b05e527523cd6ca99559fbd7559b8c5742b5635238a1ca92e45d4a6dca12",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 9016615012215601556
+      },
+      {
+        "id": "sdk-1222355435-0",
+        "side": 0,
+        "seed": 1222355435,
+        "grid": "c0f58067b9162fcac0d48dd9226a281315657694f1bf5bb539ea5ac9a57058c6",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 17063839192458778464
+      },
+      {
+        "id": "sdk-1222355435-1",
+        "side": 1,
+        "seed": 1222355435,
+        "grid": "c0f58067b9162fcac0d48dd9226a281315657694f1bf5bb539ea5ac9a57058c6",
+        "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+        "opponent_seed": 2193890435154192631
+      }
+    ],
+    "official_rookie": [
+      {
+        "id": 15653,
+        "side": 0,
+        "seed": 831721138,
+        "grid": "fc31d17ab637d781d5f35020543aeff9f9dab213248ae983aab7549b884f5189",
+        "version": null,
+        "sha256": "20a61a8f0cb83614ffc3f6b08cda1687dcd6a30f170e80f597a311e294dd217d"
+      },
+      {
+        "id": 15777,
+        "side": 0,
+        "seed": 831721138,
+        "grid": "fc31d17ab637d781d5f35020543aeff9f9dab213248ae983aab7549b884f5189",
+        "version": null,
+        "sha256": "8c6c0f36841b05af3e135438e2c5f7c053df1a060754fbf3f3349ecb67347c8a"
+      }
+    ]
+  }
+}

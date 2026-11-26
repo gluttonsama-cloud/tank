@@ -1,7 +1,6 @@
 """Local submission preflight and explicit SeedCup team operations."""
 
 import asyncio
-from functools import partial
 import getpass
 import gzip
 import hashlib
@@ -10,13 +9,14 @@ import io
 import json
 import math
 import os
-from pathlib import Path
 import re
 import sys
 import tempfile
 import time
 import unicodedata
+from functools import partial
 from http.client import IncompleteRead
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from uuid import uuid4
@@ -35,7 +35,6 @@ from . import practice_priority, versions
 from .eval_plan import SCORE_ITEMS
 from .process_bot import ProcessBot
 from .workspace import read_json, write_json
-
 
 SITE = "https://tank.dian.org.cn"
 SOCKET = "wss://tank.dian.org.cn/ws/client"
@@ -870,7 +869,7 @@ class _PracticeRoom:
         self.pending.unlink()
 
 
-async def _room_matches(root, bot_factory, ws, games, practice_info, completed, room):
+async def _room_matches(root, bot_factory, ws, games, practice_info, completed, room, *, trace_window=False):
     bot = None
     match_id = None
     opponent = PRACTICE_NAMES[practice_info["level"]]
@@ -887,23 +886,61 @@ async def _room_matches(root, bot_factory, ws, games, practice_info, completed, 
                 match_id = message["match_id"]
                 side = message["side"]
                 map_seed = message["map"]["seed"]
+                timing = {"first_observation_frame": None, "first_confirmed_source_frame": None,
+                          "observations": 0, "confirmed_actions": 0, "reused_actions": 0} if room.background else None
+                if room.background:
+                    observations = []
+                    start_message = message
+                if trace_window:
+                    from .sampling_window_timing import WindowTiming
+                    window = WindowTiming(message)
+                    timing["intervention"] = window.record
                 await asyncio.to_thread(bot.on_match_start, message)
             elif match_id is not None and message.get("match_id") == match_id:
                 if kind == "obs":
+                    if timing is not None:
+                        if timing["first_observation_frame"] is None:
+                            timing["first_observation_frame"] = message["frame"]
+                        timing["observations"] += 1
+                        applied = message.get("last_action")
+                        if applied and applied.get("source_frame") is not None:
+                            source = applied["source_frame"]
+                            if timing["first_confirmed_source_frame"] is None:
+                                timing["first_confirmed_source_frame"] = source
+                            timing["confirmed_actions"] += 1
+                            timing["reused_actions"] += source < applied["frame"]
                     raw = await asyncio.to_thread(bot.decide, message)
                     if check is not None:
                         check()
                     action, invalid = parse_action(raw)
                     if invalid:
                         raise OnlineError(f"策略第 {message['frame']} 帧动作字段类型或范围无效")
+                    if trace_window:
+                        window.observe(message, action)
                     await ws.send(json.dumps({"type": "action", "match_id": match_id,
                                               "frame": message["frame"], **action}))
+                    if room.background:
+                        observations.append([message, action])
                 elif kind == "match_end":
                     record = practice_info | {
                         "id": match_id, "result": message["result"], "side": side,
                         "score": message["result"]["scores"][("red", "blue").index(side)]["total"],
                         "map_seed": map_seed, "opponent": opponent, "replay_url": f"{SITE}/replay/{match_id}",
                     }
+                    if timing is not None:
+                        record["sdk_timing"] = timing
+                        if not observations:
+                            raise OnlineError(f"对局 {match_id} 没有收到 SDK 观测")
+                        path = root / ".local/sampling/observations" / f"{match_id}.json.gz"
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        payload = {"format": "seedcup-sdk-observations-v1", "start": start_message,
+                                   "frames": observations, "end": message, "practice": practice_info}
+                        raw = gzip.compress(json.dumps(payload, separators=(",", ":")).encode(), compresslevel=1, mtime=0)
+                        staged = path.with_suffix(".tmp")
+                        staged.write_bytes(raw)
+                        staged.replace(path)
+                        record["observation_file"] = path.relative_to(root).as_posix()
+                        record["observation_sha256"] = hashlib.sha256(raw).hexdigest()
                     write_json(_practice_path(root, record), record)
                     completed.append(record)
                     tag = record.get("case_tag")
@@ -921,7 +958,7 @@ async def _room_matches(root, bot_factory, ws, games, practice_info, completed, 
 
 
 async def _practice(root, version_id, client, games, seed, level, result, room=None, case_tag=None,
-                    bot_factory=None):
+                    bot_factory=None, *, trace_window=False):
     if bot_factory is None:
         source = versions.snapshot_data(root, version_id)
         bot_factory = partial(ProcessBot, root, source, version_id, match_seconds=None)
@@ -949,7 +986,8 @@ async def _practice(root, version_id, client, games, seed, level, result, room=N
         try:
             await room.start(code)
             async with asyncio.timeout(games * 100 + 20):
-                await _room_matches(root, bot_factory, ws, games, practice_info, result["matches"], room)
+                await _room_matches(root, bot_factory, ws, games, practice_info, result["matches"], room,
+                                    trace_window=trace_window)
         finally:
             try:
                 await room.close(code)
@@ -976,6 +1014,8 @@ def _validate_practice(root, version_id, games, seed, level, case_tag, *, remote
 
 def _save_practice_replays(root, client, completed):
     for index, record in enumerate(completed):
+        if record.get("observation_file"):
+            continue
         try:
             completed[index] = _archive_practice_replay(root, client, record, retry_pending=True)
         except (OnlineError, OSError) as error:
@@ -1007,7 +1047,7 @@ def practice(root: Path, version_id: str, *, client=None, games=1, seed=None, le
 
 
 def collect_practice(root: Path, version_id: str, *, client=None, games=2, seed=None, level="rookie",
-                     stop=None, case_tag=None) -> dict:
+                     stop=None, case_tag=None, trace_window=False) -> dict:
     """Run one background room on the sampling account."""
     _validate_practice(root, version_id, games, seed, level, case_tag)
     result = {"room": None, "level": level, "version_id": version_id, "matches": []}
@@ -1021,7 +1061,8 @@ def collect_practice(root: Path, version_id: str, *, client=None, games=2, seed=
                 raise PracticeDeferred("后台采集已暂停")
             try:
                 room = _PracticeRoom(root, client, background=True, stop=stop)
-                asyncio.run(_practice(root, version_id, client, games, seed, level, result, room, case_tag))
+                asyncio.run(_practice(root, version_id, client, games, seed, level, result, room, case_tag,
+                                      trace_window=trace_window))
             except (_ConnectionReplaced, RequestUncertain) as error:
                 raise PracticeDeferred(str(error)) from None
             except RemoteError as error:

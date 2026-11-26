@@ -453,7 +453,12 @@ def test_collection_keeps_partial_receipt_and_closes_only_its_own_room(tmp_path,
 
     assert len(records) == 1 and records[0]["case_tag"] == tag and records[0]["score"] == 20
     receipt = read_json(tmp_path / ".local/sampling/receipts" / tag / "100.json")
-    assert receipt | {"replay_path": records[0]["replay_path"]} == records[0]
+    assert receipt == records[0]
+    packed = (tmp_path / receipt["observation_file"]).read_bytes()
+    assert hashlib.sha256(packed).hexdigest() == receipt["observation_sha256"]
+    trace = json.loads(gzip.decompress(packed))
+    assert trace["start"]["match_id"] == trace["end"]["match_id"] == 100
+    assert trace["frames"][0][0]["type"] == "obs"
     assert client.requests[4][2]["fields"]["public"] is False
     endpoints = [path for _, path, _ in client.requests]
     assert f"{online.ROOMS}/EF34GH/close" not in endpoints

@@ -34,6 +34,25 @@
                 <output id="team-score" class="score-value" aria-labelledby="team-score-title">—</output>
             </section>
 
+            <section id="cycle-panel" class="panel" hidden>
+                <div class="table-scroll">
+                    <table aria-label="自动训练">
+                        <thead><tr><th>训练线</th><th>当前主力</th><th title="归属到当前主力的计榜系列赛">主力计榜战绩</th><th>正式人机分</th><th>进展</th></tr></thead>
+                        <tbody id="cycle-rows"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div class="browse-path">
+                <label>用途<select id="browse-purpose"></select></label>
+                <label>本地测试条件<select id="browse-condition"></select></label>
+            </div>
+            <div class="table-scroll project-comparison">
+                <table aria-label="同用途项目成绩">
+                    <thead><tr><th scope="col">策略或模型</th><th scope="col"><button type="button" id="sort-official">官网最高总分</button></th><th scope="col"><button type="button" id="sort-local">本地最高总分</button></th></tr></thead>
+                    <tbody id="project-scores"></tbody>
+                </table>
+            </div>
             <div id="projects" class="project-list" aria-label="策略项目"></div>
 
             <details id="training-panel" class="panel utility-panel" hidden>
@@ -50,6 +69,7 @@
                 <summary class="utility-toggle">官网操作</summary>
                 <div class="official-body">
                     <div class="official-selection">
+                        <label>用途<select id="online-purpose"></select></label>
                         <label>策略或模型<select id="online-project"></select></label>
                         <label>版本<select id="online-version"></select></label>
                         <button type="button" data-online="pack" disabled>打包预检</button>
@@ -98,7 +118,12 @@
                 <div class="test-setup">
                     <fieldset class="candidate-fieldset">
                         <legend>候选版本</legend>
+                        <div class="candidate-path">
+                            <label>用途<select id="candidate-purpose"></select></label>
+                            <label>策略或模型<select id="candidate-project"></select></label>
+                        </div>
                         <div id="candidates" class="choices"></div>
+                        <div id="chosen-versions" class="chosen-versions"></div>
                     </fieldset>
                     <div class="test-options">
                         <label>对战方式
@@ -107,6 +132,7 @@
                                 <option value="direct">分别挑战指定对手</option>
                             </select>
                         </label>
+                        <label>对比对象用途<select id="baseline-purpose"></select></label>
                         <label><span id="baseline-label">参照项目</span><select id="baseline-project"></select></label>
                         <label>版本<select id="baseline" required></select></label>
                         <label>测试方案<select id="suite" required></select></label>

@@ -153,6 +153,9 @@ def grouped_entries(entries, excluded_seeds, excluded_grids, *, expand_developme
         if seed in excluded_seeds or grid in excluded_grids:
             skipped["reserved"] += 1
             continue
+        if split == "train" and entry.get("eligible_for_training") is False:
+            skipped["collection_excluded"] += 1
+            continue
         if by_seed.setdefault(seed, split) != split or by_grid.setdefault(grid, split) != split:
             raise ValueError(f"地图种子 {seed} 或布局 {grid} 跨分组")
         if entry["version_id"] is None:

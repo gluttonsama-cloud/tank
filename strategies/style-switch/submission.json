@@ -1,0 +1,4 @@
+{
+  "runtime": "python",
+  "entrypoint": "style_router.py:StyleRouter"
+}

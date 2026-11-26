@@ -92,6 +92,16 @@ def test_split_checks_seed_and_layout_and_reserves_the_layout_of_excluded_seeds(
     assert list(groups["blind"]) == ["C"]
 
 
+def test_collection_exclusions_apply_when_reading_a_full_manifest():
+    groups, skipped = grouped_entries([
+        entry() | {"eligible_for_training": False},
+        entry(32, grid="B", seed=13),
+        entry(33, grid="C", seed=14, split="blind") | {"eligible_for_training": False},
+    ], set(), set())
+    assert skipped["collection_excluded"] == 1
+    assert set(groups["train"]) == {"B"} and set(groups["blind"]) == {"C"}
+
+
 def training_replay(change_future=False):
     game_map = generate_map(12).to_dict()
     game_map["grid"] = "0" * len(game_map["grid"])

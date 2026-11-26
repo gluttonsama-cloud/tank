@@ -230,7 +230,71 @@ def test_boss_start_freezes_pressure_and_late_game_mix(tmp_path, monkeypatch):
     assert cycle[0] == ["approach", "silent", "pulse"]
     assert all("approach" in group for group in cycle)
     assert sum("lancer" in group for group in cycle) == 3
-    assert {name for group in cycle for name in group} == set(sampling.probes.catalog())
+    assert {name for group in cycle for name in group} == set(plan["versions"])
     assert open_plan("rookie")["rotation"] == [list(group) for group in sampling.ROTATION]
     custom = open_plan("boss", ["peek"])
     assert custom["rotation"] is None and sampling.case(custom, 1)[1] == "peek"
+
+
+def test_queued_repeats_finish_before_continuous_sampling_resumes(tmp_path, monkeypatch):
+    from itertools import count
+
+    ticks = count(0, 60)
+    monkeypatch.setattr(sampling, "time", SimpleNamespace(time=time.time, monotonic=lambda: next(ticks),
+                                                          sleep=lambda _: None))
+    monkeypatch.setattr(sampling, "check_host", lambda root: None)
+    monkeypatch.setattr(sampling, "launch", lambda root, key, foreground: key)
+    monkeypatch.setattr(sampling.probes, "snapshots", lambda root, names: {"peek": "original"})
+    monkeypatch.setattr(sampling.versions, "verify", lambda root, version: None)
+    monkeypatch.setattr(online, "sampling_client", lambda root: object())
+    parent = sampling.start(tmp_path, target="boss", names=["peek"], seed=200)
+    batch = sampling.enqueue(tmp_path, parent, strategies=[("specialist", "one"), ("lancer", "two")],
+                             maps=1, repeats=2, seed=7)["id"]
+    assert sampling.enqueue(tmp_path, parent, strategies=[("specialist", "one"), ("lancer", "two")],
+                            maps=1, repeats=2, seed=7)["id"] == batch
+    assert sampling.pause(tmp_path, batch)["state"] == "paused"
+    assert sampling.resume(tmp_path, batch, False)["state"] == "scheduled"
+    calls = []
+
+    def pair(root, version, *, seed, level, case_tag, **kwargs):
+        first = 100 + 2 * len(calls)
+        calls.append((version, seed))
+        records = []
+        for mid, side in zip((first, first + 1), ("red", "blue"), strict=True):
+            path = online.practice_replay_path(root, mid)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(replay(mid, seed, side))
+            records.append({"id": mid, "side": side, "version_id": version, "team_id": 1,
+                            "map_seed": seed, "room": "ABC123", "case_tag": case_tag, "level": level,
+                            "sdk_timing": {"first_observation_frame": 1}})
+        return {"matches": records}
+
+    monkeypatch.setattr(online, "collect_practice", pair)
+    assert sampling.drive(tmp_path, parent, sampling.record(tmp_path, parent)["plan"],
+                          lambda: len(calls) == 5) == "paused"
+    assert calls == [("one", 7), ("two", 7)] * 2 + [("original", 200)]
+    assert sampling.status(tmp_path, batch)["state"] == "completed"
+    out = tmp_path / "batch.json"
+    assert data.dataset(tmp_path, "boss", run=batch, output=out)["games"] == 8
+    rows = read_json(out)
+    assert [r["repeat"] for r in rows] == [1] * 4 + [2] * 4
+    assert all(r["sdk_timing"]["first_observation_frame"] == 1 for r in rows)
+
+
+@pytest.mark.parametrize(("pause_batch", "expected"), [(False, "scheduled"), (True, "paused")])
+def test_interrupted_batch_respects_its_own_pause_request(tmp_path, monkeypatch, pause_batch, expected):
+    parent = "sample-" + "a" * 32
+    batch = "sample-" + "b" * 32
+    with data.database(tmp_path) as db:
+        db.execute("INSERT INTO runs(id,plan,state,updated) VALUES (?,?,?,?)",
+                   (batch, json.dumps({"parent": parent}), "scheduled", time.time()))
+
+    def interrupt(root, key, plan, stop, **kwargs):
+        if pause_batch:
+            with data.database(root) as db:
+                db.execute("UPDATE runs SET paused=1,state='pausing' WHERE id=?", (key,))
+        return "paused"
+
+    monkeypatch.setattr(sampling, "drive", interrupt)
+    sampling.run_scheduled(tmp_path, parent, lambda: False, object())
+    assert sampling.record(tmp_path, batch)["state"] == expected

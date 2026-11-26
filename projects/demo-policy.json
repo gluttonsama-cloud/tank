@@ -1,6 +1,6 @@
 {
   "name": "示范学习模型",
   "kind": "imitation",
-  "sources": [],
+  "purpose": "bot_sparring", "sources": [],
   "training": ["fit_demo.py"]
 }

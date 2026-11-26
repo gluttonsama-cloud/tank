@@ -234,7 +234,6 @@ def decode_maneuver(features, scores, weights):
 
 class EvadeIncoming:
     def __init__(self, info, walls):
-        self.seed = info["map"]["seed"]
         self.grid = bytes(value for row in info["map"]["grid"] for value in row)
         self.walls = walls
         self.map = None
@@ -262,7 +261,7 @@ class EvadeIncoming:
                  for i, obs in enumerate((me, enemy))]
         if self.map is None:
             spawns = tuple(Spawn(t.x, t.y, t.h) for t in tanks)
-            self.map = GameMap(self.seed, self.grid, sum(self.grid) / len(self.grid), -1, spawns)
+            self.map = GameMap(0, self.grid, sum(self.grid) / len(self.grid), -1, spawns)
 
         def safe(candidate):
             game = Game(self.map, tanks=[replace(t) for t in tanks], shells=[replace(sh) for sh in shells])

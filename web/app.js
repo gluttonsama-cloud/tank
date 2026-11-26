@@ -303,54 +303,119 @@ function versionHistory(project, expanded) {
     return history;
 }
 
+const purposeNames = { pve: "PVE · 打人机", pvp: "PVP · 打选手", collection: "数据采集",
+    bot_sparring: "人机模仿陪练", opponent_sparring: "选手模仿陪练", sdk: "官方练习人机", other: "未分类" };
+
+function byPurpose(projects) {
+    return Object.entries(purposeNames).map(([key, title]) => ({
+        key, title, projects: projects.filter((p) => (p.purpose || "other") === key)
+    })).filter((group) => group.projects.length);
+}
+
+function pickProject(prefix, projects, preferred) {
+    const purposeId = prefix + "-purpose";
+    const projectId = prefix + "-project";
+    const categories = byPurpose(projects);
+    selectOptions(purposeId, categories.map((c) => [c.key, c.title]), preferred?.purpose || $(purposeId).value);
+    const entries = categories.find((c) => c.key === $(purposeId).value)?.projects || [];
+    selectOptions(projectId, entries.map((p) => [p.id, p.name]), preferred?.id ?? $(projectId).value);
+    return entries.find((p) => p.id === $(projectId).value);
+}
+
+let detailProject = null;
+let scoreOrder = null;
+
 function renderProjects() {
-    const projects = state.overview.projects;
-    const view = JSON.stringify([projects, state.overview.main]);
+    const categories = byPurpose(state.overview.projects);
+    selectOptions("browse-purpose", categories.map((c) => [c.key, c.title]));
+    const projects = categories.find((c) => c.key === $("browse-purpose").value)?.projects || [];
+    const conditions = new Map();
+    for (const project of projects) {
+        for (const record of project.local.best_by_condition.filter(completeResult)) {
+            const key = record.condition_id;
+            const entry = conditions.get(key) || { record, count: 0 };
+            entry.count++;
+            conditions.set(key, entry);
+        }
+    }
+    const options = [...conditions.values()].sort((a, b) => b.count - a.count ||
+        Number(b.record.suite === "full") - Number(a.record.suite === "full"));
+    const condition = $("browse-condition");
+    const previous = condition.value;
+    const view = JSON.stringify([projects, state.overview.main, previous, detailProject, scoreOrder]);
     if (view === state.projectsView) return;
-    state.projectsView = view;
+    const entries = conditionOptions(options.map((entry) => entry.record));
+    condition.replaceChildren(...(entries.length ? entries : [new Option("暂无完整测试", "")]));
+    if (conditions.has(previous)) condition.value = previous;
+    condition.disabled = !entries.length;
+    const rows = projects.map((project) => ({
+        project, official: project.official.best?.score ?? null,
+        local: project.local.best_by_condition.find((r) => r.condition_id === condition.value && completeResult(r))?.total_score ?? null,
+    }));
+    const order = scoreOrder || (rows.some((r) => r.official !== null) ? "official" : "local");
+    for (const [key, title] of [["official", "官网最高总分"], ["local", "本地最高总分"]]) {
+        const button = $("sort-" + key);
+        button.textContent = title + (key === order ? " ↓" : "");
+        button.parentElement.setAttribute("aria-sort", key === order ? "descending" : "none");
+    }
+    rows.sort((a, b) => (b[order] ?? -Infinity) - (a[order] ?? -Infinity) || a.project.name.localeCompare(b.project.name, "zh"));
+    const body = $("project-scores");
+    body.replaceChildren();
+    for (const row of rows) {
+        const button = element("button", row.project.name, "project-detail-link");
+        button.type = "button";
+        button.setAttribute("aria-expanded", String(detailProject === row.project.id));
+        button.onclick = () => { detailProject = detailProject === row.project.id ? null : row.project.id; renderProjects(); };
+        addRow(body, [button, ...[row.official, row.local].map((v) =>
+            element("span", v === null ? "—" : score.format(v), v === null ? "muted" : "result-score"))]);
+    }
+    if (!rows.length) emptyTable(body, 3, "暂无策略项目");
     const container = $("projects");
     const expanded = new Set([...container.querySelectorAll("details[open]")].map((item) => item.dataset.projectId));
     container.replaceChildren();
-    if (!projects.length) container.append(element("p", "暂无策略项目", "panel empty"));
-    for (const project of projects) {
-        const card = element("article", "", "panel project-card");
-        const header = element("div", "", "project-heading");
-        header.append(element("h2", project.name), element("span", projectKinds[project.kind] || project.kind, "project-kind"));
-        const metrics = element("dl", "", "project-metrics");
-        const best = project.official.best;
-        const latest = project.local.latest;
-        const officialDetail = [best ? `${best.games} 局 · 四档人机` : "暂无成绩"];
-        const localDetail = latest ? [
-            `${suiteLabel(latest.suite)} · ${latest.scored_games} / ${latest.scheduled_games} 局${latest.status === "completed" ? "" : " · 未完成"}`,
-            `${latest.mode === "direct" ? "对手" : "陪练"} ${latest.opponents.map((id) => versionLabel(id)).join("、")}`,
-        ] : ["暂无测试"];
-        if (completeResult(latest)) {
-            const comparable = project.local.best_by_condition.find((record) => record.condition_id === latest.condition_id);
-            if (comparable && comparable.total_score > latest.total_score) {
-                localDetail.push(`比同条件最高低 ${score.format(comparable.total_score - latest.total_score)} 分`);
-            }
-        }
-        metrics.append(projectMetric("官网最高总分", best ? best.score : null, officialDetail),
-            projectMetric("最近本地实测总分", latest?.total_score ?? null, localDetail));
-        card.append(header, metrics);
+    const project = projects.find((p) => p.id === detailProject);
+    if (project) container.append(projectCard(project, expanded));
+    state.projectsView = JSON.stringify([projects, state.overview.main, condition.value, detailProject, scoreOrder]);
+}
 
-        const current = project.training.latest?.snapshot_id || latest?.version_id || project.versions[0]?.id;
-        const actions = element("div", "", "project-actions");
-        if (project.sources.length || current) {
-            const test = element("button", project.sources.length ? "测试当前代码" : "测试项目版本", "primary");
-            test.addEventListener("click", () => withButton(test, async () => {
-                if (!project.sources.length) return selectForTest([current]);
-                const versions = await Promise.all(project.sources.map((source) => command("snapshot", "create", `--strategy=${source}`)));
-                await loadOverview();
-                selectForTest(versions.map(({ id }) => id));
-            }));
-            actions.append(test);
+function projectCard(project, expanded) {
+    const card = element("article", "", "panel project-card");
+    const header = element("div", "", "project-heading");
+    header.append(element("h2", project.name), element("span", projectKinds[project.kind] || project.kind, "project-kind"));
+    const metrics = element("dl", "", "project-metrics");
+    const best = project.official.best;
+    const latest = project.local.latest;
+    const officialDetail = [best ? `${best.games} 局 · 四档人机` : "暂无成绩"];
+    const localDetail = latest ? [
+        `${suiteLabel(latest.suite)} · ${latest.scored_games} / ${latest.scheduled_games} 局${latest.status === "completed" ? "" : " · 未完成"}`,
+        `${latest.mode === "direct" ? "对手" : "陪练"} ${latest.opponents.map((id) => versionLabel(id)).join("、")}`,
+    ] : ["暂无测试"];
+    if (completeResult(latest)) {
+        const comparable = project.local.best_by_condition.find((record) => record.condition_id === latest.condition_id);
+        if (comparable && comparable.total_score > latest.total_score) {
+            localDetail.push(`比同条件最高低 ${score.format(comparable.total_score - latest.total_score)} 分`);
         }
-        if (latest) actions.append(localResultLink(latest, "查看本地结果", "button-link"));
-        if (actions.childElementCount) card.append(actions);
-        if (project.versions.length) card.append(versionHistory(project, expanded.has(project.id)));
-        container.append(card);
     }
+    metrics.append(projectMetric("官网最高总分", best ? best.score : null, officialDetail),
+        projectMetric("最近本地实测总分", latest?.total_score ?? null, localDetail));
+    card.append(header, metrics);
+
+    const current = project.training.latest?.snapshot_id || latest?.version_id || project.versions[0]?.id;
+    const actions = element("div", "", "project-actions");
+    if (project.sources.length || current) {
+        const test = element("button", project.sources.length ? "测试当前代码" : "测试项目版本", "primary");
+        test.addEventListener("click", () => withButton(test, async () => {
+            if (!project.sources.length) return selectForTest([current]);
+            const versions = await Promise.all(project.sources.map((source) => command("snapshot", "create", `--strategy=${source}`)));
+            await loadOverview();
+            selectForTest(versions.map(({ id }) => id));
+        }));
+        actions.append(test);
+    }
+    if (latest) actions.append(localResultLink(latest, "查看本地结果", "button-link"));
+    if (actions.childElementCount) card.append(actions);
+    if (project.versions.length) card.append(versionHistory(project, expanded.has(project.id)));
+    return card;
 }
 
 function newestFirst(project) {
@@ -361,18 +426,16 @@ function versionGroups(includeBot) {
     const groups = state.overview.projects.filter((p) => p.versions.length);
     if (!includeBot) return groups;
     const bot = state.overview.versions.find((v) => v.id === "baseline");
-    return [{ id: "", name: bot.name, versions: [bot] }, ...groups];
+    return [{ id: "", name: bot.name, purpose: "sdk", versions: [bot] }, ...groups];
 }
 
 function shortVersion(v) {
     return v.id === "baseline" ? v.name : `v${v.number}${v.note ? " · " + v.note : ""}`;
 }
 
-function versionPicker(projectId, versionId, groups, preferred) {
-    const current = $(projectId).value;
+function versionPicker(prefix, versionId, groups, preferred) {
     const preferredGroup = preferred && groups.find((p) => p.versions.some((v) => v.id === preferred));
-    selectOptions(projectId, groups.map((p) => [p.id, p.name]), preferredGroup ? preferredGroup.id : current);
-    const group = groups.find((p) => p.id === $(projectId).value);
+    const group = pickProject(prefix, groups, preferredGroup);
     const entries = group ? newestFirst(group).map((v) => [v.id, shortVersion(v)]) : [];
     selectOptions(versionId, entries, preferred || $(versionId).value);
     $(versionId).closest("label").hidden = group?.id === "";
@@ -380,56 +443,77 @@ function versionPicker(projectId, versionId, groups, preferred) {
 
 function renderOnlineVersions() {
     const previous = $("online-version").value;
-    versionPicker("online-project", "online-version", versionGroups(false));
+    versionPicker("online", "online-version", versionGroups(false));
     const selected = $("online-version").value;
     for (const button of document.querySelectorAll("[data-online]")) button.disabled = !selected;
     if (selected !== previous) void refreshPracticeHistory();
 }
 
-function selectedCandidates() {
-    return [...new Set([...$("candidates").querySelectorAll("input:checked")].map((chosen) => chosen.value))];
+const chosenVersions = new Set();
+function selectedCandidates() { return [...chosenVersions]; }
+
+function renderChosen() {
+    const list = $("chosen-versions");
+    list.replaceChildren();
+    for (const id of chosenVersions) {
+        const button = element("button", `${versionLabel(id)} ×`, "chosen-version");
+        button.type = "button";
+        button.setAttribute("aria-label", `移除 ${versionLabel(id)}`);
+        button.onclick = () => {
+            chosenVersions.delete(id);
+            renderTestSetup(false);
+            void estimate();
+        };
+        list.append(button);
+    }
 }
 
-function markCandidateCount(group) {
-    const count = group.querySelectorAll("input:checked").length;
-    group.querySelector("summary").textContent = group.dataset.name + (count ? ` · 已选 ${count}` : "");
-}
-
-function renderTestSetup(forceMain) {
+function renderTestSetup(forceMain, preferredProject) {
     const groups = versionGroups(true);
-    versionPicker("baseline-project", "baseline", groups, forceMain ? state.overview.main : null);
+    versionPicker("baseline", "baseline", groups, forceMain || !$("baseline-purpose").options.length ? state.overview.main : null);
+    const baseline = $("baseline").value;
+    chosenVersions.delete(baseline);
     selectOptions("suite", state.overview.suites.map((suite) => [suite, suiteLabel(suite)]), $("suite").value || "quick");
-    const selected = new Set(selectedCandidates());
+    const candidates = groups.filter((group) => group.versions.some((v) => v.id !== baseline));
+    const group = pickProject("candidate", candidates, preferredProject);
     const choices = $("candidates");
-    const opened = new Set([...choices.querySelectorAll("details[open]")].map((g) => g.dataset.project));
     choices.replaceChildren();
-    for (const group of groups) {
-        const entries = newestFirst(group).filter((v) => v.id !== $("baseline").value);
-        if (!entries.length) continue;
-        const section = element("details", "", "candidate-project");
-        section.dataset.project = group.id;
-        section.dataset.name = group.name;
-        section.open = opened.has(group.id);
-        section.append(element("summary", group.name));
-        for (const v of entries) {
+    if (group) {
+        for (const v of newestFirst(group).filter((v) => v.id !== baseline)) {
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
             checkbox.value = v.id;
-            checkbox.checked = selected.has(v.id);
+            checkbox.checked = chosenVersions.has(v.id);
             const choice = element("label", "", "check");
             choice.append(checkbox, shortVersion(v));
-            section.append(choice);
+            choices.append(choice);
         }
-        markCandidateCount(section);
-        choices.append(section);
-    }
-    if (!choices.childElementCount) choices.append(element("p", "暂无可选版本"));
+    } else choices.append(element("p", "暂无可选版本"));
+    renderChosen();
 }
 
 async function loadOverview(forceMain = false, page = null) {
     const overview = await request("/api/overview");
     if (page && state.page !== page) return;
     state.overview = overview;
+    const lines = overview.cycle || [];
+    $("cycle-panel").hidden = !lines.length;
+    $("cycle-rows").replaceChildren(...lines.map((line) => {
+        const row = document.createElement("tr");
+        const record = line.record;
+        const progress = ({ paused: "已暂停", starting: "启动中", stopped: "未启动", interrupted: "已中断" })[line.status]
+            || line.error || line.phase || "运行中";
+        for (const label of [line.line === "pvp" ? "天梯" : "人机",
+            line.incumbent ? versionLabel(line.incumbent) : "—",
+            record ? `${record.wins} 胜 ${record.losses} 负 ${record.draws} 平` : "—",
+            line.score == null ? "—" : Number(line.score).toFixed(2), progress]) {
+            row.append(element("td", label));
+        }
+        if (line.last_change && line.last_change.reason !== progress) {
+            row.lastElementChild.append(element("small", " · " + line.last_change.reason));
+        }
+        return row;
+    }));
     renderTeamScore();
     renderProjects();
     renderTraining();
@@ -448,16 +532,13 @@ async function loadOverview(forceMain = false, page = null) {
 }
 
 function selectForTest(versionIds) {
-    const baseline = $("baseline");
-    if (versionIds.includes(baseline.value)) {
-        $("baseline-project").value = "";
-        renderTestSetup(false);
+    if (versionIds.includes($("baseline").value)) {
+        versionPicker("baseline", "baseline", versionGroups(true), "baseline");
     }
-    for (const candidate of $("candidates").querySelectorAll("input")) candidate.checked = versionIds.includes(candidate.value);
-    for (const group of $("candidates").querySelectorAll("details")) {
-        group.open = Boolean(group.querySelector("input:checked"));
-        markCandidateCount(group);
-    }
+    chosenVersions.clear();
+    versionIds.forEach((id) => chosenVersions.add(id));
+    const project = state.overview.projects.find((p) => p.versions.some((v) => v.id === versionIds[0]));
+    renderTestSetup(false, project);
     location.hash = "tests";
 }
 
@@ -801,18 +882,27 @@ function showOnline(op, data) {
     output.hidden = false;
 }
 
-$("online-project").addEventListener("change", renderOnlineVersions);
+$("browse-purpose").addEventListener("change", () => {
+    detailProject = null;
+    scoreOrder = null;
+    $("browse-condition").value = "";
+    renderProjects();
+});
+$("browse-condition").addEventListener("change", renderProjects);
+for (const key of ["official", "local"]) {
+    $("sort-" + key).onclick = () => { scoreOrder = key; renderProjects(); };
+}
+for (const id of ["online-purpose", "online-project"]) $(id).addEventListener("change", renderOnlineVersions);
 $("online-version").addEventListener("change", () => void refreshPracticeHistory());
 $("official-operations").addEventListener("toggle", () => void refreshPracticeHistory());
 $("practice-history").addEventListener("toggle", () => void refreshPracticeHistory());
 
 $("test-form").addEventListener("change", (event) => {
-    if (event.target === $("baseline") || event.target === $("baseline-project")) renderTestSetup(false);
+    if (["baseline-purpose", "baseline-project", "baseline", "candidate-purpose", "candidate-project"].includes(event.target.id)) renderTestSetup(false);
     if (event.target.closest("#candidates")) {
-        for (const box of $("candidates").querySelectorAll("input")) {
-            if (box.value === event.target.value) box.checked = event.target.checked;
-        }
-        for (const group of $("candidates").querySelectorAll("details")) markCandidateCount(group);
+        if (event.target.checked) chosenVersions.add(event.target.value);
+        else chosenVersions.delete(event.target.value);
+        renderChosen();
     }
     void estimate();
 });

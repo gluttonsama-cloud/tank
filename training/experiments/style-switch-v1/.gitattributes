@@ -1,0 +1,2 @@
+*cases.json -text whitespace=cr-at-eol
+original/** -text whitespace=cr-at-eol

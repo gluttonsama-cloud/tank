@@ -13,8 +13,9 @@ from seedcup.game import SIDES, rules
 from seedcup.game.replay import FORMAT_VERSION
 
 from . import online
-from .sampling_probes import aggregate_coverage, coverage
-from .workspace import read_json
+from . import sampling_opportunities as opportunities
+from .sampling_probes import aggregate_coverage, coverage, intervention_anchor
+from .workspace import read_json, write_json
 
 
 @contextmanager
@@ -33,6 +34,12 @@ def database(root):
                 paused INTEGER NOT NULL DEFAULT 0, message TEXT NOT NULL DEFAULT '', updated REAL NOT NULL);
             CREATE TABLE IF NOT EXISTS slots(
                 run TEXT, step INTEGER, side TEXT, id INTEGER NOT NULL, PRIMARY KEY(run,step,side), UNIQUE(run,id));
+            CREATE TABLE IF NOT EXISTS sampling_maps(
+                run TEXT, map_index INTEGER, decision TEXT NOT NULL, PRIMARY KEY(run,map_index));
+            CREATE TABLE IF NOT EXISTS sampling_holdouts(grid TEXT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS sampling_reserved_versions(version TEXT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS sdk_observations(
+                id INTEGER PRIMARY KEY, target TEXT NOT NULL, entry TEXT NOT NULL);
         """)
         with db:
             yield db
@@ -82,7 +89,27 @@ def layout_hash(game_map):
     return hashlib.sha256(game_map["grid"].encode("ascii")).hexdigest()
 
 
-def ingest(root, raw, target, *, match_id=None, listing=None, practice=None, probe=None):
+def sdk_layout_hash(start: dict) -> str:
+    """Hash an SDK grid in the same row-major format as an official replay."""
+    grid = "".join(str(int(cell)) for row in start["map"]["grid"] for cell in row)
+    return layout_hash({"grid": grid})
+
+
+def default_split(grid: str) -> str:
+    return {0: "blind", 1: "development"}.get(int(grid[:8], 16) % 10, "train")
+
+
+def _frozen_collection_case(db, practice):
+    tag = (practice or {}).get("case_tag")
+    if tag is None or not online._SAMPLE_TAG.fullmatch(tag):
+        return False
+    run, step = tag.rsplit("-", 1)
+    return db.execute("""SELECT 1 FROM runs r JOIN sampling_maps m ON m.run=r.id
+        AND m.map_index=CAST(? AS INTEGER)/json_extract(r.plan,'$.width')
+        WHERE r.id=? AND json_extract(m.decision,'$.protocol')=2""", (step, run)).fetchone() is not None
+
+
+def ingest(root, raw, target, *, match_id=None, listing=None, practice=None, probe=None, collection=None):
     """Validate identity before persisting raw bytes. A later snapshot can enrich a passive record."""
     target_key(target)
     replay = json.loads(gzip.decompress(raw))
@@ -116,6 +143,11 @@ def ingest(root, raw, target, *, match_id=None, listing=None, practice=None, pro
     grid = layout_hash(game_map)
     path = online.practice_replay_path(root, mid)
     stats = coverage(replay, side)
+    stats[opportunities.CACHE_KEY] = opportunities.extract(replay, side)
+    if collection is not None:
+        collection = collection | {"actual_grid": grid, "layout_match": grid == collection["planned_grid"]}
+        if probe in ("window-fire", "window-hold"):
+            collection["intervention_anchor"] = intervention_anchor(replay, other)
     initialize_splits(root)
     with database(root) as db:
         db.execute("BEGIN IMMEDIATE")
@@ -123,9 +155,7 @@ def ingest(root, raw, target, *, match_id=None, listing=None, practice=None, pro
         prior = json.loads(previous[0]) if previous else {}
         if prior and prior["sha256"] != digest:
             raise ValueError(f"同一官网对局的回放内容已变更 {mid}")
-        bucket = int(grid[:8], 16) % 10
-        db.execute("INSERT OR IGNORE INTO layouts VALUES (?,?)",
-                   (grid, "blind" if bucket == 0 else "development" if bucket == 1 else "train"))
+        db.execute("INSERT OR IGNORE INTO layouts VALUES (?,?)", (grid, default_split(grid)))
         split = db.execute("SELECT split FROM layouts WHERE grid=?", (grid,)).fetchone()[0]
         entry = {"id": mid, "target": target, "target_side": side, "seed": game_map["seed"],
                  "game_no": meta["game"], "players": {s: {k: meta[s][k] for k in ("id", "name", "bot")} for s in SIDES},
@@ -133,6 +163,14 @@ def ingest(root, raw, target, *, match_id=None, listing=None, practice=None, pro
                  "grid_sha256": grid, "split": split, "sha256": digest, "rules": replay["rules"]["version"],
                  "path": path.relative_to(root).as_posix(), "probe": probe or prior.get("probe"),
                  "version_id": practice["version_id"] if practice else prior.get("version_id")}
+        if collection is not None or "collection" in prior:
+            entry["collection"] = collection if collection is not None else prior["collection"]
+        elif prior.get("unassigned_collection") or _frozen_collection_case(db, practice):
+            # Retrying a room can create another game on an already archived side.
+            entry["unassigned_collection"] = True
+        timing = (practice or {}).get("sdk_timing", prior.get("sdk_timing"))
+        if timing is not None:
+            entry["sdk_timing"] = timing
         if path.is_file():
             if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
                 raise ValueError(f"本机回放文件与来源不符 {mid}")
@@ -194,34 +232,70 @@ def pull(root, target, *, client=None):
 
 def dataset(root, target, *, run=None, split=None, output=None):
     target_key(target)
-    query = "SELECT e.entry,e.coverage FROM examples e"
+    query = f"SELECT e.entry,e.coverage,({opportunities.TRAIN_LAYOUT}) AS eligible_for_training"
+    query += (",s.step,json_extract(e.coverage,'$.probe.shots') AS probe_shots" if run else "") + " FROM examples e"
     params = []
     if run:
         query += " JOIN slots s ON e.id=s.id AND s.run=?"
         params.append(run)
     query += " WHERE e.target=?"
     params.append(target)
-    if split:
+    if split == "train":
+        query += f" AND ({opportunities.TRAIN_LAYOUT})"
+    elif split:
         query += " AND json_extract(e.entry,'$.split')=?"
         params.append(split)
     query += " ORDER BY e.id"
+
     def summarize(db, stream=None):
         maps = set()
+        observations, updates = [], []
+        rows = db.execute(query, params)
+        pairs = {}
+        if run:
+            rows = rows.fetchall()
+            pairs, pair_summary = opportunities.comparisons(
+                json.loads(row["entry"]) | {"probe_shots": row["probe_shots"]} for row in rows)
+
         def counts():
-            for index, row in enumerate(db.execute(query, params)):
+            for index, row in enumerate(rows):
                 entry = json.loads(row["entry"])
-                maps.add(entry["grid_sha256"])
+                grid = entry["grid_sha256"]
+                maps.add(grid)
+                replay_coverage = json.loads(row["coverage"])
+                records = opportunities.for_entry(root, entry, replay_coverage.get(opportunities.CACHE_KEY), updates)
+                if records is not None:
+                    observations.append((grid, entry["version_id"], records))
                 if stream is not None:
+                    if "collection" in entry:
+                        entry["repeat"] = entry["collection"]["repeat"]
+                    elif run_plan and "repeats" in run_plan:
+                        entry["repeat"] = 1 + row["step"] % run_plan["width"] // len(run_plan["probes"])
+                    entry["eligible_for_training"] = bool(row["eligible_for_training"])
+                    entry[opportunities.CACHE_KEY] = records
+                    if entry["id"] in pairs:
+                        entry["comparison"] = pairs[entry["id"]]
                     if index:
                         stream.write(",\n")
                     json.dump(entry, stream, ensure_ascii=False)
-                yield json.loads(row["coverage"])
+                yield replay_coverage
+
         stats = aggregate_coverage(counts())
-        return {"target": target, "games": stats["games"], "maps": len(maps), "coverage": stats}
+        opportunities.save_cache(db, updates)
+        result = {"target": target, "games": stats["games"], "maps": len(maps), "coverage": stats,
+                  opportunities.CACHE_KEY: opportunities.summarize(observations),
+                  "opportunities_unavailable_games": stats["games"] - len(observations)}
+        if run:
+            result["comparisons"] = pair_summary
+        return result
 
     with database(root) as db:
-        if run and not db.execute("SELECT 1 FROM runs WHERE id=?", (run,)).fetchone():
-            raise ValueError(f"找不到采样任务 {run}")
+        run_plan = None
+        if run:
+            row = db.execute("SELECT plan FROM runs WHERE id=?", (run,)).fetchone()
+            if not row:
+                raise ValueError(f"找不到采样任务 {run}")
+            run_plan = json.loads(row["plan"])
         if output is None:
             return summarize(db)
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -233,3 +307,52 @@ def dataset(root, target, *, run=None, split=None, output=None):
                 stream.write("\n]\n")
             staged.replace(output)
     return result | {"path": str(output)}
+
+
+def sdk_dataset(root: Path, target: str, *, run: str | None = None, split: str | None = None,
+                output: Path | None = None) -> dict:
+    """Export an index of the observation streams captured by the SDK client."""
+    target_key(target)
+    initialize_splits(root)
+    query = "SELECT o.entry FROM sdk_observations o"
+    params = [target]
+    if run is not None:
+        query += " JOIN slots s ON o.id=s.id AND s.run=?"
+        params.insert(0, run)
+    query += " WHERE o.target=? ORDER BY o.id"
+    with database(root) as db:
+        if run is not None and not db.execute("SELECT 1 FROM runs WHERE id=?", (run,)).fetchone():
+            raise ValueError(f"找不到采样任务 {run}")
+        layouts = dict(db.execute("SELECT grid,split FROM layouts"))
+        holdouts = {row[0] for row in db.execute("SELECT grid FROM sampling_holdouts")}
+        reserved = {row[0] for row in db.execute("SELECT version FROM sampling_reserved_versions")}
+        entries = []
+        for row in db.execute(query, params):
+            entry = json.loads(row["entry"])
+            if "grid_sha256" not in entry:
+                # Early receipts predate the layout metadata. Recover it from the raw bytes.
+                raw = (root / entry["observation_file"]).read_bytes()
+                if hashlib.sha256(raw).hexdigest() != entry["observation_sha256"]:
+                    raise ValueError(f"SDK 观测文件校验失败 {entry['id']}")
+                entry["grid_sha256"] = sdk_layout_hash(json.loads(gzip.decompress(raw))["start"])
+            grid = entry["grid_sha256"]
+            actual_split = layouts.get(grid, default_split(grid))
+            collection = entry.get("collection")
+            if collection:
+                collection.update(actual_grid=grid, layout_match=grid == collection["planned_grid"])
+            eligible = (actual_split == "train" and grid not in holdouts and entry["version_id"] not in reserved
+                        and entry["probe"] != "holdout-orbit" and not entry.get("unassigned_collection")
+                        and (collection is None or (collection["planned_split"] == "train"
+                                                    and collection["layout_match"])))
+            matches_split = eligible if split == "train" else split is None or split == actual_split
+            if not matches_split:
+                continue
+            entry.setdefault("target_side", SIDES[1 - SIDES.index(entry["side"])])
+            entry.update(target=target, split=actual_split, eligible_for_training=eligible)
+            entries.append(entry)
+    result = {"source": "sdk", "target": target, "games": len(entries),
+              "maps": len({entry["grid_sha256"] for entry in entries})}
+    if output is not None:
+        write_json(output, entries)
+        result["path"] = str(output)
+    return result

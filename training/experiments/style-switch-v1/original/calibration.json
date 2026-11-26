@@ -1,0 +1,2058 @@
+{
+  "config": {
+    "latest_frame": 100,
+    "min_drive": 0.18,
+    "consecutive_frames": 3
+  },
+  "policy_versions": {
+    "A": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+    "B": "v-0921b165f76c1e667e4b1ae1e22c35dd3ada329ae317800db44b1d71bcc6a174"
+  },
+  "sdk_rules": "2.6-prelim",
+  "archive_cutoff_inclusive": 23053,
+  "excluded_trials_seed_count": 25,
+  "fit_boss_by_challenger_version": {
+    "v-347bb1bc7deb8f248847596bcc9594f637c81178ab1b24da4defd5e5e015987f": 1,
+    "v-db3d6c14e58892be0e84dc66eab38d2f50996ec53d18753cf7f93f80a51722ef": 1,
+    "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d": 40,
+    "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6": 8,
+    "v-f7fbd3db4d9778f45ba356ab6fdd7d17f675fe44a110e1f2ec08282bf55ad8f4": 4,
+    "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd": 6,
+    "v-2b9dfa9a5fa442edd0b7b4c223228034fce69d5b4e94e416d8f763244dc7e825": 4,
+    "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f": 6,
+    "v-0081349ee9d189d06bc534ecdac22f731b4908714c90b45644a1962aea0583f5": 2
+  },
+  "evidence": {
+    "coordinates": "rounded to replay precision before feature extraction",
+    "feature": "positive displacement along opponent heading with clear lanes in both frames",
+    "fallback": "stay with A when the streak is absent through the final eligible frame",
+    "time_seconds": 10.0,
+    "classification": "switch evidence calibrated on boss versus SDK rookie only"
+  },
+  "selection_candidates": [
+    {
+      "config": {
+        "latest_frame": 100,
+        "min_drive": 0.1,
+        "consecutive_frames": 3
+      },
+      "boss_switches": 65,
+      "sdk_rookie_switches": 0,
+      "boss_median_switch_frame": 37
+    },
+    {
+      "config": {
+        "latest_frame": 100,
+        "min_drive": 0.1,
+        "consecutive_frames": 5
+      },
+      "boss_switches": 51,
+      "sdk_rookie_switches": 0,
+      "boss_median_switch_frame": 36
+    },
+    {
+      "config": {
+        "latest_frame": 100,
+        "min_drive": 0.1,
+        "consecutive_frames": 7
+      },
+      "boss_switches": 39,
+      "sdk_rookie_switches": 0,
+      "boss_median_switch_frame": 9
+    },
+    {
+      "config": {
+        "latest_frame": 100,
+        "min_drive": 0.14,
+        "consecutive_frames": 3
+      },
+      "boss_switches": 65,
+      "sdk_rookie_switches": 0,
+      "boss_median_switch_frame": 37
+    },
+    {
+      "config": {
+        "latest_frame": 100,
+        "min_drive": 0.14,
+        "consecutive_frames": 5
+      },
+      "boss_switches": 51,
+      "sdk_rookie_switches": 0,
+      "boss_median_switch_frame": 36
+    },
+    {
+      "config": {
+        "latest_frame": 100,
+        "min_drive": 0.14,
+        "consecutive_frames": 7
+      },
+      "boss_switches": 39,
+      "sdk_rookie_switches": 0,
+      "boss_median_switch_frame": 9
+    },
+    {
+      "config": {
+        "latest_frame": 100,
+        "min_drive": 0.18,
+        "consecutive_frames": 3
+      },
+      "boss_switches": 65,
+      "sdk_rookie_switches": 0,
+      "boss_median_switch_frame": 37
+    },
+    {
+      "config": {
+        "latest_frame": 100,
+        "min_drive": 0.18,
+        "consecutive_frames": 5
+      },
+      "boss_switches": 50,
+      "sdk_rookie_switches": 0,
+      "boss_median_switch_frame": 36.0
+    },
+    {
+      "config": {
+        "latest_frame": 100,
+        "min_drive": 0.18,
+        "consecutive_frames": 7
+      },
+      "boss_switches": 38,
+      "sdk_rookie_switches": 0,
+      "boss_median_switch_frame": 8.5
+    }
+  ],
+  "train": {
+    "official_boss": {
+      "games": 72,
+      "layouts": 36,
+      "switches": 65,
+      "median_switch_frame": 37,
+      "rows": [
+        {
+          "id": 14053,
+          "seed": 1200500144,
+          "grid": "00ec121e4c59779e1b286bd71d9ab285b681a7a5f188b1e33a49b8a0abd7d0ce",
+          "side": 0,
+          "version": "v-347bb1bc7deb8f248847596bcc9594f637c81178ab1b24da4defd5e5e015987f",
+          "source": "official_boss",
+          "switch_frame": null
+        },
+        {
+          "id": 14168,
+          "seed": 1200500144,
+          "grid": "00ec121e4c59779e1b286bd71d9ab285b681a7a5f188b1e33a49b8a0abd7d0ce",
+          "side": 1,
+          "version": "v-db3d6c14e58892be0e84dc66eab38d2f50996ec53d18753cf7f93f80a51722ef",
+          "source": "official_boss",
+          "switch_frame": 69
+        },
+        {
+          "id": 18018,
+          "seed": 903204731,
+          "grid": "04a9ebdc090ee13cc9e7cba63b3e435b8180501c09a1067e1bff396b3c5ce0cb",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 68
+        },
+        {
+          "id": 18025,
+          "seed": 903204731,
+          "grid": "04a9ebdc090ee13cc9e7cba63b3e435b8180501c09a1067e1bff396b3c5ce0cb",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": null
+        },
+        {
+          "id": 18521,
+          "seed": 904042563,
+          "grid": "075060756693f3679021470aefdc6260e41bc51da080068af55a949fc2ab906d",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 48
+        },
+        {
+          "id": 18526,
+          "seed": 904042563,
+          "grid": "075060756693f3679021470aefdc6260e41bc51da080068af55a949fc2ab906d",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 50
+        },
+        {
+          "id": 22284,
+          "seed": 908650639,
+          "grid": "077a48e7d55520c03390de8b6602a200bfa2ae14c3fb1d55c1580c9e8d211b7f",
+          "side": 0,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 22294,
+          "seed": 908650639,
+          "grid": "077a48e7d55520c03390de8b6602a200bfa2ae14c3fb1d55c1580c9e8d211b7f",
+          "side": 1,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 14525,
+          "seed": 713029,
+          "grid": "093c42f1250bce1e6e6e018949f9c8603b59f983d0f463be287a2055b6706201",
+          "side": 0,
+          "version": "v-f7fbd3db4d9778f45ba356ab6fdd7d17f675fe44a110e1f2ec08282bf55ad8f4",
+          "source": "official_boss",
+          "switch_frame": 22
+        },
+        {
+          "id": 14529,
+          "seed": 713029,
+          "grid": "093c42f1250bce1e6e6e018949f9c8603b59f983d0f463be287a2055b6706201",
+          "side": 1,
+          "version": "v-f7fbd3db4d9778f45ba356ab6fdd7d17f675fe44a110e1f2ec08282bf55ad8f4",
+          "source": "official_boss",
+          "switch_frame": 21
+        },
+        {
+          "id": 20670,
+          "seed": 907184433,
+          "grid": "0b565f9a1ec6f616d3debe4af58d7144d5e2110baedac2660e38d43aac4db0f0",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 45
+        },
+        {
+          "id": 20673,
+          "seed": 907184433,
+          "grid": "0b565f9a1ec6f616d3debe4af58d7144d5e2110baedac2660e38d43aac4db0f0",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 58
+        },
+        {
+          "id": 17752,
+          "seed": 834129904,
+          "grid": "0ff8098f5601f51446a8e46a4429e5f38968f0a2b2fa00bc194432c00e2b0cfe",
+          "side": 0,
+          "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 17761,
+          "seed": 834129904,
+          "grid": "0ff8098f5601f51446a8e46a4429e5f38968f0a2b2fa00bc194432c00e2b0cfe",
+          "side": 1,
+          "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 22166,
+          "seed": 187964194,
+          "grid": "13c4b8be1a76eac4745dd482e361c96f4b706914d19f5a56fcaeb1a8757cd8a7",
+          "side": 0,
+          "version": "v-2b9dfa9a5fa442edd0b7b4c223228034fce69d5b4e94e416d8f763244dc7e825",
+          "source": "official_boss",
+          "switch_frame": 39
+        },
+        {
+          "id": 22191,
+          "seed": 187964194,
+          "grid": "13c4b8be1a76eac4745dd482e361c96f4b706914d19f5a56fcaeb1a8757cd8a7",
+          "side": 1,
+          "version": "v-2b9dfa9a5fa442edd0b7b4c223228034fce69d5b4e94e416d8f763244dc7e825",
+          "source": "official_boss",
+          "switch_frame": 37
+        },
+        {
+          "id": 14093,
+          "seed": 8911,
+          "grid": "144e7f97cc0549e12827cf1ca61398112510f5707b44a47ee3d1abdf4ff960a5",
+          "side": 0,
+          "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+          "source": "official_boss",
+          "switch_frame": 79
+        },
+        {
+          "id": 14096,
+          "seed": 8911,
+          "grid": "144e7f97cc0549e12827cf1ca61398112510f5707b44a47ee3d1abdf4ff960a5",
+          "side": 1,
+          "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+          "source": "official_boss",
+          "switch_frame": 70
+        },
+        {
+          "id": 15645,
+          "seed": 831721137,
+          "grid": "166ee544c683d9f0bfa409cb7946b489149f458ce580ab0256ffe273b398acef",
+          "side": 0,
+          "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+          "source": "official_boss",
+          "switch_frame": 49
+        },
+        {
+          "id": 15665,
+          "seed": 831721137,
+          "grid": "166ee544c683d9f0bfa409cb7946b489149f458ce580ab0256ffe273b398acef",
+          "side": 1,
+          "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+          "source": "official_boss",
+          "switch_frame": 50
+        },
+        {
+          "id": 22352,
+          "seed": 908755368,
+          "grid": "2052f2c4f266feb2f4d0179790d3f2a8e3ce2b4e8cf1b7a13583bb029b4f70e1",
+          "side": 0,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 22372,
+          "seed": 908755368,
+          "grid": "2052f2c4f266feb2f4d0179790d3f2a8e3ce2b4e8cf1b7a13583bb029b4f70e1",
+          "side": 1,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 19257,
+          "seed": 905299311,
+          "grid": "20f457f074204a6afe8cef889acc571ab946ea7e883b581dd86c0fd3b641109b",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 34
+        },
+        {
+          "id": 19263,
+          "seed": 905299311,
+          "grid": "20f457f074204a6afe8cef889acc571ab946ea7e883b581dd86c0fd3b641109b",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 34
+        },
+        {
+          "id": 14566,
+          "seed": 714079,
+          "grid": "228ffb8f6419f434461ee8a40098d75ed9ed4839dfc5f5b369842f17120b25d2",
+          "side": 0,
+          "version": "v-0081349ee9d189d06bc534ecdac22f731b4908714c90b45644a1962aea0583f5",
+          "source": "official_boss",
+          "switch_frame": 19
+        },
+        {
+          "id": 14579,
+          "seed": 714079,
+          "grid": "228ffb8f6419f434461ee8a40098d75ed9ed4839dfc5f5b369842f17120b25d2",
+          "side": 1,
+          "version": "v-0081349ee9d189d06bc534ecdac22f731b4908714c90b45644a1962aea0583f5",
+          "source": "official_boss",
+          "switch_frame": 24
+        },
+        {
+          "id": 21798,
+          "seed": 187754736,
+          "grid": "2369705ea2a2e5782c5185901f56fe6fba6cc9fdb9506502a3456c7fcf550ea8",
+          "side": 0,
+          "version": "v-2b9dfa9a5fa442edd0b7b4c223228034fce69d5b4e94e416d8f763244dc7e825",
+          "source": "official_boss",
+          "switch_frame": 69
+        },
+        {
+          "id": 21829,
+          "seed": 187754736,
+          "grid": "2369705ea2a2e5782c5185901f56fe6fba6cc9fdb9506502a3456c7fcf550ea8",
+          "side": 1,
+          "version": "v-2b9dfa9a5fa442edd0b7b4c223228034fce69d5b4e94e416d8f763244dc7e825",
+          "source": "official_boss",
+          "switch_frame": 86
+        },
+        {
+          "id": 18577,
+          "seed": 904147292,
+          "grid": "2739fdf085b807ee18657bb20511e2dcd273408df7b74841cfdbd4f4fcf9c067",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": null
+        },
+        {
+          "id": 18579,
+          "seed": 904147292,
+          "grid": "2739fdf085b807ee18657bb20511e2dcd273408df7b74841cfdbd4f4fcf9c067",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 99
+        },
+        {
+          "id": 16366,
+          "seed": 832035324,
+          "grid": "2976cbc0b50085fee983a5d271e51baa903f203541758b9d86edf664f7e2a346",
+          "side": 0,
+          "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 16375,
+          "seed": 832035324,
+          "grid": "2976cbc0b50085fee983a5d271e51baa903f203541758b9d86edf664f7e2a346",
+          "side": 1,
+          "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 20753,
+          "seed": 907289162,
+          "grid": "2cbdcee9e57ebf51ea4d41f5767bce2f82b3e1d1bda8d1a85c6ba91803b9a05e",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 20758,
+          "seed": 907289162,
+          "grid": "2cbdcee9e57ebf51ea4d41f5767bce2f82b3e1d1bda8d1a85c6ba91803b9a05e",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 16587,
+          "seed": 832349511,
+          "grid": "2f644b78e368c32f9a6628107df83ff50c1234171d82bbfa571c8712c18cc2b3",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 78
+        },
+        {
+          "id": 16595,
+          "seed": 832349511,
+          "grid": "2f644b78e368c32f9a6628107df83ff50c1234171d82bbfa571c8712c18cc2b3",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 57
+        },
+        {
+          "id": 17962,
+          "seed": 903100002,
+          "grid": "30d70f193b69ef8d492cfb719aa6d3f1930c21605e7944be57b4061070bc0e31",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 35
+        },
+        {
+          "id": 17966,
+          "seed": 903100002,
+          "grid": "30d70f193b69ef8d492cfb719aa6d3f1930c21605e7944be57b4061070bc0e31",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 37
+        },
+        {
+          "id": 16259,
+          "seed": 831825866,
+          "grid": "3967aad6819aa9f25593ec01608988ff7f2a472141ebe35aaaebe813c53d83df",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 34
+        },
+        {
+          "id": 16263,
+          "seed": 831825866,
+          "grid": "3967aad6819aa9f25593ec01608988ff7f2a472141ebe35aaaebe813c53d83df",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 12
+        },
+        {
+          "id": 18935,
+          "seed": 904775666,
+          "grid": "3c3682f1f418c32a1d431e965ecfd54862653bfc69d5255df78502a878ca17b6",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 18941,
+          "seed": 904775666,
+          "grid": "3c3682f1f418c32a1d431e965ecfd54862653bfc69d5255df78502a878ca17b6",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 22503,
+          "seed": 908964826,
+          "grid": "3f24d31c53acdb36fd5e9d6ce6d0bc3ff6f46e048882955fc0a4d94f27cd3585",
+          "side": 0,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": 55
+        },
+        {
+          "id": 22522,
+          "seed": 908964826,
+          "grid": "3f24d31c53acdb36fd5e9d6ce6d0bc3ff6f46e048882955fc0a4d94f27cd3585",
+          "side": 1,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": 44
+        },
+        {
+          "id": 22433,
+          "seed": 908860097,
+          "grid": "411a8f8bfceb62cd2e8eb259f9c4c9be2440f8b2395877ceab401aae80aa642f",
+          "side": 0,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": 4
+        },
+        {
+          "id": 22454,
+          "seed": 908860097,
+          "grid": "411a8f8bfceb62cd2e8eb259f9c4c9be2440f8b2395877ceab401aae80aa642f",
+          "side": 1,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": 5
+        },
+        {
+          "id": 14333,
+          "seed": 44917,
+          "grid": "472b8518f7df2f34e2fe499bd1ae3ecd968325e5a355458f75c8c0a34096ddbd",
+          "side": 0,
+          "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 14336,
+          "seed": 44917,
+          "grid": "472b8518f7df2f34e2fe499bd1ae3ecd968325e5a355458f75c8c0a34096ddbd",
+          "side": 1,
+          "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 18068,
+          "seed": 903309460,
+          "grid": "50d5bca657467a4532a39080b3919f249c8937c5efddd2064a09db14f2206bb2",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 59
+        },
+        {
+          "id": 18076,
+          "seed": 903309460,
+          "grid": "50d5bca657467a4532a39080b3919f249c8937c5efddd2064a09db14f2206bb2",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 50
+        },
+        {
+          "id": 21325,
+          "seed": 907917536,
+          "grid": "53d4961a2b8f0ef75b10b5f2ab39e716db3f44e4fbdbf9aae521140078d4f78e",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 59
+        },
+        {
+          "id": 21331,
+          "seed": 907917536,
+          "grid": "53d4961a2b8f0ef75b10b5f2ab39e716db3f44e4fbdbf9aae521140078d4f78e",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 73
+        },
+        {
+          "id": 18606,
+          "seed": 904252021,
+          "grid": "53da01d26affcc1eae1dfc73214081280380b248caaa2bf55649114c770aae7b",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": null
+        },
+        {
+          "id": 18610,
+          "seed": 904252021,
+          "grid": "53da01d26affcc1eae1dfc73214081280380b248caaa2bf55649114c770aae7b",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": null
+        },
+        {
+          "id": 14544,
+          "seed": 713053,
+          "grid": "55bbee9830ea513067877e51e3e62e73c70e692b718def3b30eecea25edde07c",
+          "side": 0,
+          "version": "v-f7fbd3db4d9778f45ba356ab6fdd7d17f675fe44a110e1f2ec08282bf55ad8f4",
+          "source": "official_boss",
+          "switch_frame": 42
+        },
+        {
+          "id": 14548,
+          "seed": 713053,
+          "grid": "55bbee9830ea513067877e51e3e62e73c70e692b718def3b30eecea25edde07c",
+          "side": 1,
+          "version": "v-f7fbd3db4d9778f45ba356ab6fdd7d17f675fe44a110e1f2ec08282bf55ad8f4",
+          "source": "official_boss",
+          "switch_frame": 16
+        },
+        {
+          "id": 14219,
+          "seed": 8107,
+          "grid": "617ccd243efa67824685fc2eca87c13f64456b97a6f1d5a3102db2bf8bc03318",
+          "side": 0,
+          "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+          "source": "official_boss",
+          "switch_frame": 88
+        },
+        {
+          "id": 14226,
+          "seed": 8107,
+          "grid": "617ccd243efa67824685fc2eca87c13f64456b97a6f1d5a3102db2bf8bc03318",
+          "side": 1,
+          "version": "v-e14eb6d871988e74c79bae052828dbd8caef4ecb8a07cb248160094910da108f",
+          "source": "official_boss",
+          "switch_frame": 83
+        },
+        {
+          "id": 19598,
+          "seed": 905822956,
+          "grid": "62c32dfe4df6ce07b627ab78d8870625539f3312600f4d99a7207c8a1b0acfde",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 66
+        },
+        {
+          "id": 19605,
+          "seed": 905822956,
+          "grid": "62c32dfe4df6ce07b627ab78d8870625539f3312600f4d99a7207c8a1b0acfde",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 62
+        },
+        {
+          "id": 19726,
+          "seed": 906032414,
+          "grid": "631888be927575dadd63fcea26901f3ebe0e67401abc2d37f8540e98ef97b207",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 46
+        },
+        {
+          "id": 19733,
+          "seed": 906032414,
+          "grid": "631888be927575dadd63fcea26901f3ebe0e67401abc2d37f8540e98ef97b207",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 53
+        },
+        {
+          "id": 16821,
+          "seed": 832663698,
+          "grid": "66e80642b96649cd10344186ced0b740aaa9f6291d51d02164cfbfc95dcd91f9",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": null
+        },
+        {
+          "id": 16825,
+          "seed": 832663698,
+          "grid": "66e80642b96649cd10344186ced0b740aaa9f6291d51d02164cfbfc95dcd91f9",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 83
+        },
+        {
+          "id": 20977,
+          "seed": 907498620,
+          "grid": "67fcccc33a2aef9dee6a9f25d1f02eb9328faa8afddc68b21d56d5124e23e7dc",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 34
+        },
+        {
+          "id": 20987,
+          "seed": 907498620,
+          "grid": "67fcccc33a2aef9dee6a9f25d1f02eb9328faa8afddc68b21d56d5124e23e7dc",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 34
+        },
+        {
+          "id": 18853,
+          "seed": 904670937,
+          "grid": "6a31a5949b2aad0326722db15d45a5635dcd8d3205a8080ffd7c423c1d45dac5",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 18861,
+          "seed": 904670937,
+          "grid": "6a31a5949b2aad0326722db15d45a5635dcd8d3205a8080ffd7c423c1d45dac5",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 20417,
+          "seed": 906870246,
+          "grid": "6cec21d2c3d82f9154c5ab33fcc9b0ede4d7cd95e678aab43349b305db0c5849",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": null
+        },
+        {
+          "id": 20420,
+          "seed": 906870246,
+          "grid": "6cec21d2c3d82f9154c5ab33fcc9b0ede4d7cd95e678aab43349b305db0c5849",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 80
+        },
+        {
+          "id": 21600,
+          "seed": 908441181,
+          "grid": "6ebc671acea7cba3546f668a7f114fdb559dccda96d2d3059100468d4085bc91",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 21605,
+          "seed": 908441181,
+          "grid": "6ebc671acea7cba3546f668a7f114fdb559dccda96d2d3059100468d4085bc91",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        }
+      ]
+    },
+    "sdk_rookie": {
+      "games": 72,
+      "layouts": 36,
+      "switches": 0,
+      "median_switch_frame": null,
+      "rows": [
+        {
+          "id": "sdk-2065198339-0",
+          "seed": 2065198339,
+          "grid": "6a651604bba5450f6b6a59f961c3166a5320fd512100ae8e22f2a0608d716704",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-2065198339-1",
+          "seed": 2065198339,
+          "grid": "6a651604bba5450f6b6a59f961c3166a5320fd512100ae8e22f2a0608d716704",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-844349050-0",
+          "seed": 844349050,
+          "grid": "372f96e73c5247852c240e859ee3d4af06b52089f2eea24ca5b61678c4713bf8",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-844349050-1",
+          "seed": 844349050,
+          "grid": "372f96e73c5247852c240e859ee3d4af06b52089f2eea24ca5b61678c4713bf8",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-621131878-0",
+          "seed": 621131878,
+          "grid": "a475fc8f7d679abed4eb9950e66d2ebdbdda2cb7a901f3d82d7aa5f1510673f8",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-621131878-1",
+          "seed": 621131878,
+          "grid": "a475fc8f7d679abed4eb9950e66d2ebdbdda2cb7a901f3d82d7aa5f1510673f8",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1846374990-0",
+          "seed": 1846374990,
+          "grid": "6e014308fcc495e66c17f1d002613927f493af1255d4a346f6a66351a432c032",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1846374990-1",
+          "seed": 1846374990,
+          "grid": "6e014308fcc495e66c17f1d002613927f493af1255d4a346f6a66351a432c032",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1087286793-0",
+          "seed": 1087286793,
+          "grid": "361c70a99e1c1fceca6a1e7f583d692b75dabcda2fb67780c7188a36d784cd59",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1087286793-1",
+          "seed": 1087286793,
+          "grid": "361c70a99e1c1fceca6a1e7f583d692b75dabcda2fb67780c7188a36d784cd59",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1616433551-0",
+          "seed": 1616433551,
+          "grid": "843f37d2600f62abc9b4f215cd74a968e289d0426c0a761af5747bcc65a7fe63",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1616433551-1",
+          "seed": 1616433551,
+          "grid": "843f37d2600f62abc9b4f215cd74a968e289d0426c0a761af5747bcc65a7fe63",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-771923802-0",
+          "seed": 771923802,
+          "grid": "e9b940b28d0d97ffd3a968e11ec901c58c6d2e5add9522d65c8a486ec01a9068",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-771923802-1",
+          "seed": 771923802,
+          "grid": "e9b940b28d0d97ffd3a968e11ec901c58c6d2e5add9522d65c8a486ec01a9068",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-899521138-0",
+          "seed": 899521138,
+          "grid": "e8d139ae916b5faf2f271e93cbc07353f3408d61f9f6a89b79373acf37622abd",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-899521138-1",
+          "seed": 899521138,
+          "grid": "e8d139ae916b5faf2f271e93cbc07353f3408d61f9f6a89b79373acf37622abd",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-984328774-0",
+          "seed": 984328774,
+          "grid": "2f9511ef89332cf0d8d2d350c5e04b2dcece34de54793727ac4914ca912b8c10",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-984328774-1",
+          "seed": 984328774,
+          "grid": "2f9511ef89332cf0d8d2d350c5e04b2dcece34de54793727ac4914ca912b8c10",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-958598688-0",
+          "seed": 958598688,
+          "grid": "061e1c3992196048234837bf37d6578743f5c13967a053385ab0c5eb7bb321e6",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-958598688-1",
+          "seed": 958598688,
+          "grid": "061e1c3992196048234837bf37d6578743f5c13967a053385ab0c5eb7bb321e6",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-281874420-0",
+          "seed": 281874420,
+          "grid": "086fe774efda7e0fed5d33718bcf0a2a29e86d32ae44a5e29202815f78c8ebb9",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-281874420-1",
+          "seed": 281874420,
+          "grid": "086fe774efda7e0fed5d33718bcf0a2a29e86d32ae44a5e29202815f78c8ebb9",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1264593602-0",
+          "seed": 1264593602,
+          "grid": "369a53f281a16671079792e1dc3a2184fcf89758f5ccced747792b6176ba6c45",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1264593602-1",
+          "seed": 1264593602,
+          "grid": "369a53f281a16671079792e1dc3a2184fcf89758f5ccced747792b6176ba6c45",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-945180030-0",
+          "seed": 945180030,
+          "grid": "a7a92b98342f5a0c446a3c0a7c3793c645d055509b7dd713a467bf007e2565a5",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-945180030-1",
+          "seed": 945180030,
+          "grid": "a7a92b98342f5a0c446a3c0a7c3793c645d055509b7dd713a467bf007e2565a5",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1413493751-0",
+          "seed": 1413493751,
+          "grid": "59f4ef1aa0be27c76155094550412488245a1d611fb84219eadb3ef9e2249af5",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1413493751-1",
+          "seed": 1413493751,
+          "grid": "59f4ef1aa0be27c76155094550412488245a1d611fb84219eadb3ef9e2249af5",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1651287248-0",
+          "seed": 1651287248,
+          "grid": "7da9f03a70269af5d72c8e202e7de9a81c5feb2abd16d6064b50b29eabf34e31",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1651287248-1",
+          "seed": 1651287248,
+          "grid": "7da9f03a70269af5d72c8e202e7de9a81c5feb2abd16d6064b50b29eabf34e31",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-763654617-0",
+          "seed": 763654617,
+          "grid": "5b33c8a77e39296ac857a63c6d395ba534464065a56dd7becf161f023d1f7d10",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-763654617-1",
+          "seed": 763654617,
+          "grid": "5b33c8a77e39296ac857a63c6d395ba534464065a56dd7becf161f023d1f7d10",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1280028378-0",
+          "seed": 1280028378,
+          "grid": "033fb99e13f0732f30c25109684df78501810fd2bfcf69bf76febb92d4ab4c79",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1280028378-1",
+          "seed": 1280028378,
+          "grid": "033fb99e13f0732f30c25109684df78501810fd2bfcf69bf76febb92d4ab4c79",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-2033342722-0",
+          "seed": 2033342722,
+          "grid": "aa0d0452cf0dcf7bf18b79a2d7cf1c317b931ccb1d1aeeeaf79024ecb292bd28",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-2033342722-1",
+          "seed": 2033342722,
+          "grid": "aa0d0452cf0dcf7bf18b79a2d7cf1c317b931ccb1d1aeeeaf79024ecb292bd28",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1907871101-0",
+          "seed": 1907871101,
+          "grid": "83e8e00d0bf7660dce0d1811e1550ee3aa6d2dd0e7296178c0676ad0c4814cb6",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1907871101-1",
+          "seed": 1907871101,
+          "grid": "83e8e00d0bf7660dce0d1811e1550ee3aa6d2dd0e7296178c0676ad0c4814cb6",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1492793626-0",
+          "seed": 1492793626,
+          "grid": "2adb138491a486e4ea1fa0a319d331a34ed6c7fe6ec9b5e4e146c86bff27ca9f",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1492793626-1",
+          "seed": 1492793626,
+          "grid": "2adb138491a486e4ea1fa0a319d331a34ed6c7fe6ec9b5e4e146c86bff27ca9f",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-151255267-0",
+          "seed": 151255267,
+          "grid": "84badbb9922f105a7cc6c928f7f94692eed3140cec7a86b1017bde5fa795fe14",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-151255267-1",
+          "seed": 151255267,
+          "grid": "84badbb9922f105a7cc6c928f7f94692eed3140cec7a86b1017bde5fa795fe14",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1953363869-0",
+          "seed": 1953363869,
+          "grid": "c9fa9b5ccd59851b5d59952d7f5cfb8a749411ad1c053850e502042412e8fa3c",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1953363869-1",
+          "seed": 1953363869,
+          "grid": "c9fa9b5ccd59851b5d59952d7f5cfb8a749411ad1c053850e502042412e8fa3c",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-164752998-0",
+          "seed": 164752998,
+          "grid": "d54546a85e1a8ac0af825ddf471acceb16808b099f1574851e8b21b4226e68ad",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-164752998-1",
+          "seed": 164752998,
+          "grid": "d54546a85e1a8ac0af825ddf471acceb16808b099f1574851e8b21b4226e68ad",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-807305287-0",
+          "seed": 807305287,
+          "grid": "adbb2724e1a219e67ba8f1a29c8c2e3217a6ef299a0981209167d0729629532b",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-807305287-1",
+          "seed": 807305287,
+          "grid": "adbb2724e1a219e67ba8f1a29c8c2e3217a6ef299a0981209167d0729629532b",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-568765219-0",
+          "seed": 568765219,
+          "grid": "7408a8c108002b93be4a4d044b0a4b75314f984cc471742c8fdc944f98d42059",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-568765219-1",
+          "seed": 568765219,
+          "grid": "7408a8c108002b93be4a4d044b0a4b75314f984cc471742c8fdc944f98d42059",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1804654557-0",
+          "seed": 1804654557,
+          "grid": "cca1ee8b2f6ed6b03c12f76b7c3bc0e1b7a68dce2355bc5a73a6faf409d7a14a",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1804654557-1",
+          "seed": 1804654557,
+          "grid": "cca1ee8b2f6ed6b03c12f76b7c3bc0e1b7a68dce2355bc5a73a6faf409d7a14a",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-711461146-0",
+          "seed": 711461146,
+          "grid": "2202674b6b8c9f96576d4c04d3dfb46bdced7fd17532d0b8be316d198202a3ad",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-711461146-1",
+          "seed": 711461146,
+          "grid": "2202674b6b8c9f96576d4c04d3dfb46bdced7fd17532d0b8be316d198202a3ad",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1942780880-0",
+          "seed": 1942780880,
+          "grid": "a81dd278baf192c92028bd750c195b551ab8cc467fac2a3658cc30e1b62f8920",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1942780880-1",
+          "seed": 1942780880,
+          "grid": "a81dd278baf192c92028bd750c195b551ab8cc467fac2a3658cc30e1b62f8920",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1292576566-0",
+          "seed": 1292576566,
+          "grid": "6aac1adcc95172a0dcbd6827c7a518922dfe05545a30bc9af19c3c77012be243",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1292576566-1",
+          "seed": 1292576566,
+          "grid": "6aac1adcc95172a0dcbd6827c7a518922dfe05545a30bc9af19c3c77012be243",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1923187873-0",
+          "seed": 1923187873,
+          "grid": "9b7e1857d7020411c9abc58d8f64ea708101a19946b252362dc72a471c59be3f",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1923187873-1",
+          "seed": 1923187873,
+          "grid": "9b7e1857d7020411c9abc58d8f64ea708101a19946b252362dc72a471c59be3f",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-197846802-0",
+          "seed": 197846802,
+          "grid": "a72d070c9513ea28a12133ca5b3d5b14ebeeca8d041b91b69587628331dded7b",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-197846802-1",
+          "seed": 197846802,
+          "grid": "a72d070c9513ea28a12133ca5b3d5b14ebeeca8d041b91b69587628331dded7b",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-368689739-0",
+          "seed": 368689739,
+          "grid": "c47f4fbafeba2ffb9d5e7cbee80c40d766c1acfec4f5d125712ad1faffa3da3c",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-368689739-1",
+          "seed": 368689739,
+          "grid": "c47f4fbafeba2ffb9d5e7cbee80c40d766c1acfec4f5d125712ad1faffa3da3c",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1909137215-0",
+          "seed": 1909137215,
+          "grid": "bfe1150c2b47bb6a99a794c1e272316dbdccf12392f38f5c45e2532ed1994ccc",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1909137215-1",
+          "seed": 1909137215,
+          "grid": "bfe1150c2b47bb6a99a794c1e272316dbdccf12392f38f5c45e2532ed1994ccc",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-663721100-0",
+          "seed": 663721100,
+          "grid": "4ef7920c2d7e10a07ac6e2646918878ead86f1a971fc5125f930f39b74ba4c69",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-663721100-1",
+          "seed": 663721100,
+          "grid": "4ef7920c2d7e10a07ac6e2646918878ead86f1a971fc5125f930f39b74ba4c69",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-929243686-0",
+          "seed": 929243686,
+          "grid": "d330915a2a31dec855a20a49b9f1c0dde5b1540e8288bd1a8e8d88579ce2b6df",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-929243686-1",
+          "seed": 929243686,
+          "grid": "d330915a2a31dec855a20a49b9f1c0dde5b1540e8288bd1a8e8d88579ce2b6df",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-276369205-0",
+          "seed": 276369205,
+          "grid": "0df8f69463aadd6d850f5e9ff26b91b19656f49cd686c65497690ef047eac49c",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-276369205-1",
+          "seed": 276369205,
+          "grid": "0df8f69463aadd6d850f5e9ff26b91b19656f49cd686c65497690ef047eac49c",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        }
+      ]
+    }
+  },
+  "holdout": {
+    "official_boss": {
+      "games": 32,
+      "layouts": 16,
+      "switches": 29,
+      "median_switch_frame": 38,
+      "rows": [
+        {
+          "id": 18788,
+          "seed": 904566208,
+          "grid": "6f273275c34ad5c67c4e774d8ee0e7390ce469e2a37732f5df6d00da9b9724ba",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 60
+        },
+        {
+          "id": 18796,
+          "seed": 904566208,
+          "grid": "6f273275c34ad5c67c4e774d8ee0e7390ce469e2a37732f5df6d00da9b9724ba",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 38
+        },
+        {
+          "id": 16729,
+          "seed": 832558969,
+          "grid": "71cca9a969985c285cd0ebed01a4a3699a0086d4f390b97452fafdffbc0d6b78",
+          "side": 0,
+          "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+          "source": "official_boss",
+          "switch_frame": 29
+        },
+        {
+          "id": 16739,
+          "seed": 832558969,
+          "grid": "71cca9a969985c285cd0ebed01a4a3699a0086d4f390b97452fafdffbc0d6b78",
+          "side": 1,
+          "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+          "source": "official_boss",
+          "switch_frame": 30
+        },
+        {
+          "id": 20071,
+          "seed": 906451330,
+          "grid": "78f6fcb89965a3a254a5038aca38614fb7be9af08c8b461a72377f6b7e349019",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 41
+        },
+        {
+          "id": 20076,
+          "seed": 906451330,
+          "grid": "78f6fcb89965a3a254a5038aca38614fb7be9af08c8b461a72377f6b7e349019",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 40
+        },
+        {
+          "id": 22089,
+          "seed": 908545910,
+          "grid": "7a2f3366598a03637b368e610b4bc46f5991ba7a058da27dae2165ef319a3cd9",
+          "side": 0,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": null
+        },
+        {
+          "id": 22101,
+          "seed": 908545910,
+          "grid": "7a2f3366598a03637b368e610b4bc46f5991ba7a058da27dae2165ef319a3cd9",
+          "side": 1,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": 59
+        },
+        {
+          "id": 18385,
+          "seed": 903833105,
+          "grid": "8430a9c01d023095f0b0f619de24e8268bae382333453d68c209ef73b7a53516",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 43
+        },
+        {
+          "id": 18390,
+          "seed": 903833105,
+          "grid": "8430a9c01d023095f0b0f619de24e8268bae382333453d68c209ef73b7a53516",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 44
+        },
+        {
+          "id": 16460,
+          "seed": 832140053,
+          "grid": "8457131ba22276c3ce7cfe86d7d43dbd85fda40ab01686bbd623637d006b6b3b",
+          "side": 0,
+          "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+          "source": "official_boss",
+          "switch_frame": 30
+        },
+        {
+          "id": 16468,
+          "seed": 832140053,
+          "grid": "8457131ba22276c3ce7cfe86d7d43dbd85fda40ab01686bbd623637d006b6b3b",
+          "side": 1,
+          "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+          "source": "official_boss",
+          "switch_frame": 26
+        },
+        {
+          "id": 22668,
+          "seed": 909174284,
+          "grid": "86092d58b2bc5837900c548150534d03f1e69aa32d302e3711f85069d02bc5eb",
+          "side": 0,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": 80
+        },
+        {
+          "id": 22687,
+          "seed": 909174284,
+          "grid": "86092d58b2bc5837900c548150534d03f1e69aa32d302e3711f85069d02bc5eb",
+          "side": 1,
+          "version": "v-afb2273b543f0b869ecdecde648acdf2563db4b1f3574c9454142012adf298d6",
+          "source": "official_boss",
+          "switch_frame": null
+        },
+        {
+          "id": 17233,
+          "seed": 833292072,
+          "grid": "8c2db19a177e288520b4256537c77d4d0c305a97852d580f8259ec08513c40b2",
+          "side": 0,
+          "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+          "source": "official_boss",
+          "switch_frame": 47
+        },
+        {
+          "id": 17241,
+          "seed": 833292072,
+          "grid": "8c2db19a177e288520b4256537c77d4d0c305a97852d580f8259ec08513c40b2",
+          "side": 1,
+          "version": "v-bd42d72c1e24c9b2bfc48fac31162e7448fadb0bf18e1f99c8ccd36d5f2340fd",
+          "source": "official_boss",
+          "switch_frame": 79
+        },
+        {
+          "id": 16528,
+          "seed": 832244782,
+          "grid": "8fcacec010f1a78f40e76431fdb275d223faec60623d7e0ccf873758fbe96bfd",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 16534,
+          "seed": 832244782,
+          "grid": "8fcacec010f1a78f40e76431fdb275d223faec60623d7e0ccf873758fbe96bfd",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 14613,
+          "seed": 714091,
+          "grid": "8ff4bec680d6afbd6eda5ec34efe68e56aecc78b236a8d8bd3bb6e1346e51800",
+          "side": 0,
+          "version": "v-0081349ee9d189d06bc534ecdac22f731b4908714c90b45644a1962aea0583f5",
+          "source": "official_boss",
+          "switch_frame": 73
+        },
+        {
+          "id": 14626,
+          "seed": 714091,
+          "grid": "8ff4bec680d6afbd6eda5ec34efe68e56aecc78b236a8d8bd3bb6e1346e51800",
+          "side": 1,
+          "version": "v-0081349ee9d189d06bc534ecdac22f731b4908714c90b45644a1962aea0583f5",
+          "source": "official_boss",
+          "switch_frame": null
+        },
+        {
+          "id": 19980,
+          "seed": 906346601,
+          "grid": "92299ff0a814074b5dfb057886e3187843ece6157f66fcb07fb506bbc16c88fd",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 19987,
+          "seed": 906346601,
+          "grid": "92299ff0a814074b5dfb057886e3187843ece6157f66fcb07fb506bbc16c88fd",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 17036,
+          "seed": 832977885,
+          "grid": "957bfc310acb9c78c9231912ba56a1f1e5888771700a79115aaf7c8298568473",
+          "side": 0,
+          "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+          "source": "official_boss",
+          "switch_frame": 28
+        },
+        {
+          "id": 17042,
+          "seed": 832977885,
+          "grid": "957bfc310acb9c78c9231912ba56a1f1e5888771700a79115aaf7c8298568473",
+          "side": 1,
+          "version": "v-2be8c9197f424e41bc4f02749ea0514cab8b715ac2355d55d87f68d36cd217ad",
+          "source": "official_boss",
+          "switch_frame": 13
+        },
+        {
+          "id": 14180,
+          "seed": 34729,
+          "grid": "9e00f8ec47bb71333165e9a9172afd32bfe12ac15e8c10091c58228ede48edda",
+          "side": 0,
+          "version": "v-158cdc8b0d5723e857539c9adb429eef2bb7b9cffdc0e730c3e5af450c32ca68",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 14184,
+          "seed": 34729,
+          "grid": "9e00f8ec47bb71333165e9a9172afd32bfe12ac15e8c10091c58228ede48edda",
+          "side": 1,
+          "version": "v-158cdc8b0d5723e857539c9adb429eef2bb7b9cffdc0e730c3e5af450c32ca68",
+          "source": "official_boss",
+          "switch_frame": 3
+        },
+        {
+          "id": 18347,
+          "seed": 903728376,
+          "grid": "a15f59c41a9720dc32bdb1fb7845723d823686868ffd233c7054609bfb4d02f7",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 39
+        },
+        {
+          "id": 18352,
+          "seed": 903728376,
+          "grid": "a15f59c41a9720dc32bdb1fb7845723d823686868ffd233c7054609bfb4d02f7",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 39
+        },
+        {
+          "id": 18455,
+          "seed": 903937834,
+          "grid": "a4f9f087382642d8ef5566a84f6b7dd6b576d95fb639d00f78610d67f5b52a2e",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 40
+        },
+        {
+          "id": 18460,
+          "seed": 903937834,
+          "grid": "a4f9f087382642d8ef5566a84f6b7dd6b576d95fb639d00f78610d67f5b52a2e",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 31
+        },
+        {
+          "id": 19359,
+          "seed": 905508769,
+          "grid": "a6f68693410880609895e7c5f839cf6c430a5191f2ea0a77285991d401e2c569",
+          "side": 0,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 38
+        },
+        {
+          "id": 19367,
+          "seed": 905508769,
+          "grid": "a6f68693410880609895e7c5f839cf6c430a5191f2ea0a77285991d401e2c569",
+          "side": 1,
+          "version": "v-f88f2f3fc2a25a66a0e897669393c7c2814b37761c526e0a868c31270046ef8d",
+          "source": "official_boss",
+          "switch_frame": 11
+        }
+      ]
+    },
+    "sdk_rookie": {
+      "games": 32,
+      "layouts": 16,
+      "switches": 0,
+      "median_switch_frame": null,
+      "rows": [
+        {
+          "id": "sdk-940479389-0",
+          "seed": 940479389,
+          "grid": "9e254d0f0958161d9090672f169365a1b41279251bc8a5058df0156fe2c360d4",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-940479389-1",
+          "seed": 940479389,
+          "grid": "9e254d0f0958161d9090672f169365a1b41279251bc8a5058df0156fe2c360d4",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1916084733-0",
+          "seed": 1916084733,
+          "grid": "c72f03c8768f78177fdd1fc92b44875a972c0f374bcab8d80b225018168bdb38",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1916084733-1",
+          "seed": 1916084733,
+          "grid": "c72f03c8768f78177fdd1fc92b44875a972c0f374bcab8d80b225018168bdb38",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1201649956-0",
+          "seed": 1201649956,
+          "grid": "d5062a0f10637de0ba22003664fdee4fb9cc61917e494ad1d904d61155052f49",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1201649956-1",
+          "seed": 1201649956,
+          "grid": "d5062a0f10637de0ba22003664fdee4fb9cc61917e494ad1d904d61155052f49",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1815720024-0",
+          "seed": 1815720024,
+          "grid": "a20ff1a482746083705e3adf30d20d13d7089331716a3d39de00b8c8ee8c92a6",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1815720024-1",
+          "seed": 1815720024,
+          "grid": "a20ff1a482746083705e3adf30d20d13d7089331716a3d39de00b8c8ee8c92a6",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-303406941-0",
+          "seed": 303406941,
+          "grid": "7aec95fa40f9056eee1587f5280925a953ea0c59ac74793d351073abc38a1b0a",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-303406941-1",
+          "seed": 303406941,
+          "grid": "7aec95fa40f9056eee1587f5280925a953ea0c59ac74793d351073abc38a1b0a",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-2014288422-0",
+          "seed": 2014288422,
+          "grid": "6bfc9ed6a3e9ec197d7545ced38b9eeaa74c7ad988e9ac50a62e8c217929794e",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-2014288422-1",
+          "seed": 2014288422,
+          "grid": "6bfc9ed6a3e9ec197d7545ced38b9eeaa74c7ad988e9ac50a62e8c217929794e",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1654472744-0",
+          "seed": 1654472744,
+          "grid": "f65966217cf9dd37fb93adf6db2b56ce1798e0a8bf19a1f99e097b924620e69a",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1654472744-1",
+          "seed": 1654472744,
+          "grid": "f65966217cf9dd37fb93adf6db2b56ce1798e0a8bf19a1f99e097b924620e69a",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1146174335-0",
+          "seed": 1146174335,
+          "grid": "244650ed16ab6ba9537661c63e9f4ccf04a568fd0aeee9b583474227dab034f4",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1146174335-1",
+          "seed": 1146174335,
+          "grid": "244650ed16ab6ba9537661c63e9f4ccf04a568fd0aeee9b583474227dab034f4",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-71214022-0",
+          "seed": 71214022,
+          "grid": "636a7ceb0c8efc7b9e9b6a03c836f30f646c94b51744dc4342e6a60c7f8a4314",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-71214022-1",
+          "seed": 71214022,
+          "grid": "636a7ceb0c8efc7b9e9b6a03c836f30f646c94b51744dc4342e6a60c7f8a4314",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1026021232-0",
+          "seed": 1026021232,
+          "grid": "9ff8b9c12cb0e6b0e98396b93f327f6331d56d7ff0bb266e34902d54c09174b9",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1026021232-1",
+          "seed": 1026021232,
+          "grid": "9ff8b9c12cb0e6b0e98396b93f327f6331d56d7ff0bb266e34902d54c09174b9",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1591177238-0",
+          "seed": 1591177238,
+          "grid": "b0271c721fbb8fc8550b62cac2837980ce9e26a2e394dcac5990f85dcc78ff64",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1591177238-1",
+          "seed": 1591177238,
+          "grid": "b0271c721fbb8fc8550b62cac2837980ce9e26a2e394dcac5990f85dcc78ff64",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-221252906-0",
+          "seed": 221252906,
+          "grid": "15cb376fb712640c46e40f324f0874789dda6ab9bf502e9930f1ccae3bacbb9d",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-221252906-1",
+          "seed": 221252906,
+          "grid": "15cb376fb712640c46e40f324f0874789dda6ab9bf502e9930f1ccae3bacbb9d",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1827830443-0",
+          "seed": 1827830443,
+          "grid": "3617df8917f8ac2ea8a85ee146365c357cefba9cccc585c88f05f1ea7ea133b9",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1827830443-1",
+          "seed": 1827830443,
+          "grid": "3617df8917f8ac2ea8a85ee146365c357cefba9cccc585c88f05f1ea7ea133b9",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-2093710187-0",
+          "seed": 2093710187,
+          "grid": "62ce67f42fa75b27b4d9eab46658e7540dd40d5d30318c2ab156b38d96600a3d",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-2093710187-1",
+          "seed": 2093710187,
+          "grid": "62ce67f42fa75b27b4d9eab46658e7540dd40d5d30318c2ab156b38d96600a3d",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-649067690-0",
+          "seed": 649067690,
+          "grid": "2f38b05e527523cd6ca99559fbd7559b8c5742b5635238a1ca92e45d4a6dca12",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-649067690-1",
+          "seed": 649067690,
+          "grid": "2f38b05e527523cd6ca99559fbd7559b8c5742b5635238a1ca92e45d4a6dca12",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1222355435-0",
+          "seed": 1222355435,
+          "grid": "c0f58067b9162fcac0d48dd9226a281315657694f1bf5bb539ea5ac9a57058c6",
+          "side": 0,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": "sdk-1222355435-1",
+          "seed": 1222355435,
+          "grid": "c0f58067b9162fcac0d48dd9226a281315657694f1bf5bb539ea5ac9a57058c6",
+          "side": 1,
+          "version": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+          "source": "sdk_rookie",
+          "switch_frame": null
+        }
+      ]
+    },
+    "official_rookie": {
+      "games": 2,
+      "layouts": 1,
+      "switches": 0,
+      "median_switch_frame": null,
+      "rows": [
+        {
+          "id": 15653,
+          "seed": 831721138,
+          "grid": "fc31d17ab637d781d5f35020543aeff9f9dab213248ae983aab7549b884f5189",
+          "side": 0,
+          "version": null,
+          "source": "official_rookie",
+          "switch_frame": null
+        },
+        {
+          "id": 15777,
+          "seed": 831721138,
+          "grid": "fc31d17ab637d781d5f35020543aeff9f9dab213248ae983aab7549b884f5189",
+          "side": 0,
+          "version": null,
+          "source": "official_rookie",
+          "switch_frame": null
+        }
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "起始规则策略",
   "kind": "rule",
-  "sources": ["starter"],
+  "purpose": "pve", "sources": ["starter"],
   "training": []
 }

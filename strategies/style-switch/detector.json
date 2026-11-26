@@ -1,0 +1,6 @@
+{
+  "latest_frame": 300,
+  "min_drive": 0.18,
+  "consecutive_frames": 3,
+  "frames_from_first_clear": 100
+}

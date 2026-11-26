@@ -333,6 +333,12 @@ def load_splits(folder, request):
 def main(request_path):
     folder = request_path.parent
     request = json.loads(request_path.read_text(encoding="utf-8"))
+    if request["params"].get("policy") == "trajectory-imitation":
+        if __package__:
+            from .fit_boss_trajectory import run
+        else:
+            from fit_boss_trajectory import run
+        return run(request_path, request)
     train, holdout = load_splits(folder, request)
     epochs = request["params"].get("epochs", 36)
     if type(epochs) is not int or not 1 <= epochs <= 200:

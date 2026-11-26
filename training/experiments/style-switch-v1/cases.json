@@ -1,0 +1,338 @@
+[
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 327425200,
+    "side": 0,
+    "opponent_seed": 959467139244065895,
+    "contestant_seed": 6653280311831066506
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 327425200,
+    "side": 1,
+    "opponent_seed": 5760683764502341223,
+    "contestant_seed": 7871867947994198129
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 1223236002,
+    "side": 0,
+    "opponent_seed": 1620768342213954313,
+    "contestant_seed": 6493326690663685738
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 1223236002,
+    "side": 1,
+    "opponent_seed": 6751243252687201989,
+    "contestant_seed": 8552491184970854674
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 802506335,
+    "side": 0,
+    "opponent_seed": 4803558793985826960,
+    "contestant_seed": 6123386863986940496
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 802506335,
+    "side": 1,
+    "opponent_seed": 5646136974355749004,
+    "contestant_seed": 7703955193959695784
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 1043509065,
+    "side": 0,
+    "opponent_seed": 3455299479783201388,
+    "contestant_seed": 7572613397895876538
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 1043509065,
+    "side": 1,
+    "opponent_seed": 4709786219928654618,
+    "contestant_seed": 5055280547380227676
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 343631630,
+    "side": 0,
+    "opponent_seed": 8785778481333153128,
+    "contestant_seed": 5692139162475407613
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 343631630,
+    "side": 1,
+    "opponent_seed": 2338781261560642292,
+    "contestant_seed": 7315456576646082870
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 1855701201,
+    "side": 0,
+    "opponent_seed": 6299237854438491701,
+    "contestant_seed": 5439896696090076279
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 1855701201,
+    "side": 1,
+    "opponent_seed": 5014242688212704756,
+    "contestant_seed": 3134461503648735158
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 1710204705,
+    "side": 0,
+    "opponent_seed": 4646213648349304077,
+    "contestant_seed": 1139926068493768905
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 1710204705,
+    "side": 1,
+    "opponent_seed": 9141568000204356104,
+    "contestant_seed": 6837233934587425100
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 1305802108,
+    "side": 0,
+    "opponent_seed": 3013746668946137425,
+    "contestant_seed": 8941661011360272666
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 1305802108,
+    "side": 1,
+    "opponent_seed": 8853584653978499762,
+    "contestant_seed": 8571170057680746818
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 817354548,
+    "side": 0,
+    "opponent_seed": 495039218823748280,
+    "contestant_seed": 4141933118888151698
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 817354548,
+    "side": 1,
+    "opponent_seed": 8088819012018412002,
+    "contestant_seed": 4525121968264297833
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 186710185,
+    "side": 0,
+    "opponent_seed": 3148830432018035179,
+    "contestant_seed": 5927271033547200621
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 186710185,
+    "side": 1,
+    "opponent_seed": 7409886976548643235,
+    "contestant_seed": 7207768245940588112
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 804374345,
+    "side": 0,
+    "opponent_seed": 4117626589438419144,
+    "contestant_seed": 5046021195823607683
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 804374345,
+    "side": 1,
+    "opponent_seed": 4811501626762703718,
+    "contestant_seed": 8467042424354842900
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 512038944,
+    "side": 0,
+    "opponent_seed": 5791108636629986501,
+    "contestant_seed": 117074835231022234
+  },
+  {
+    "tier": "sdk_rookie",
+    "map_seed": 512038944,
+    "side": 1,
+    "opponent_seed": 3704514543872651035,
+    "contestant_seed": 5895327786491806928
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 133200633,
+    "side": 0,
+    "opponent_seed": 6145355764923074657,
+    "contestant_seed": 6122064652066294588
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 133200633,
+    "side": 1,
+    "opponent_seed": 8918625094186195790,
+    "contestant_seed": 1673729083512998486
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 901619167,
+    "side": 0,
+    "opponent_seed": 6451612948724915200,
+    "contestant_seed": 3005690481457607164
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 901619167,
+    "side": 1,
+    "opponent_seed": 2047873804154149818,
+    "contestant_seed": 1376353102810410744
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 1958545355,
+    "side": 0,
+    "opponent_seed": 2916705361323318959,
+    "contestant_seed": 5148145909337139129
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 1958545355,
+    "side": 1,
+    "opponent_seed": 1118427958686862865,
+    "contestant_seed": 2981309032183965196
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 212145652,
+    "side": 0,
+    "opponent_seed": 2790715759350754219,
+    "contestant_seed": 6866231411245215426
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 212145652,
+    "side": 1,
+    "opponent_seed": 6410836416043757748,
+    "contestant_seed": 9144768368975127161
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 1589691475,
+    "side": 0,
+    "opponent_seed": 8384228936791882853,
+    "contestant_seed": 1347641759306384764
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 1589691475,
+    "side": 1,
+    "opponent_seed": 2561080038075255851,
+    "contestant_seed": 7342409331748851119
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 1952630217,
+    "side": 0,
+    "opponent_seed": 8671410102993841810,
+    "contestant_seed": 3119711672322009404
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 1952630217,
+    "side": 1,
+    "opponent_seed": 5734160339810580431,
+    "contestant_seed": 2215616445518212194
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 649508338,
+    "side": 0,
+    "opponent_seed": 6001645092565012516,
+    "contestant_seed": 7878559878584477342
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 649508338,
+    "side": 1,
+    "opponent_seed": 3472687458809836045,
+    "contestant_seed": 7296590932077409969
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 628606060,
+    "side": 0,
+    "opponent_seed": 1387310347889688091,
+    "contestant_seed": 1188760771155084980
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 628606060,
+    "side": 1,
+    "opponent_seed": 8416217648635939639,
+    "contestant_seed": 7123800680506283224
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 612458090,
+    "side": 0,
+    "opponent_seed": 812898290772612529,
+    "contestant_seed": 2095748750302140227
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 612458090,
+    "side": 1,
+    "opponent_seed": 4835185815055567041,
+    "contestant_seed": 46381413546939333
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 1053095038,
+    "side": 0,
+    "opponent_seed": 7101031179695958329,
+    "contestant_seed": 1780872916262811853
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 1053095038,
+    "side": 1,
+    "opponent_seed": 3390763098603271815,
+    "contestant_seed": 725993844261075961
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 312249336,
+    "side": 0,
+    "opponent_seed": 7186900232059368032,
+    "contestant_seed": 1639997768829418659
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 312249336,
+    "side": 1,
+    "opponent_seed": 6289717644207454358,
+    "contestant_seed": 1187534705727894315
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 1565250759,
+    "side": 0,
+    "opponent_seed": 508581424137344690,
+    "contestant_seed": 482475654959790238
+  },
+  {
+    "tier": "v31_boss_surrogate",
+    "map_seed": 1565250759,
+    "side": 1,
+    "opponent_seed": 7153561629676670842,
+    "contestant_seed": 625473332060804917
+  }
+]

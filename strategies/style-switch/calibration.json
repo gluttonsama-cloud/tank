@@ -1,0 +1,14 @@
+{
+  "parent": "v-0e1d22f2a8b937eb52ae904d820a593fef8f42b3f08d875e4ae3a8fbf712a3d7",
+  "config": {
+    "latest_frame": 300,
+    "min_drive": 0.18,
+    "consecutive_frames": 3,
+    "frames_from_first_clear": 100
+  },
+  "policy_versions": {
+    "A": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+    "B": "v-0921b165f76c1e667e4b1ae1e22c35dd3ada329ae317800db44b1d71bcc6a174"
+  },
+  "reason": "首次无遮挡后观察 10 秒，最迟到开局 30 秒。沿用 v1 的推进阈值。"
+}

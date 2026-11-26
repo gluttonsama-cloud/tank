@@ -18,9 +18,18 @@ from .workspace import read_json
 KINDS = {"rule", "planning", "rl", "imitation", "hybrid", "other"}
 
 
-def _project(project_id, name, kind="other"):
+PURPOSES = {"pve", "pvp", "collection", "bot_sparring", "opponent_sparring", "other"}
+
+
+def _purpose(value):
+    if not isinstance(value, str) or value not in PURPOSES:
+        raise ValueError(f"无效的项目用途 {value!r}")
+    return value
+
+
+def _project(project_id, name, kind="other", purpose="other"):
     return {
-        "id": project_id, "name": name, "kind": kind,
+        "id": project_id, "name": name, "kind": kind, "purpose": _purpose(purpose),
         "sources": [], "training_scripts": [], "versions": [],
         "local": {"latest": None, "best_by_condition": []},
         "official": {"best": None, "latest": None},
@@ -63,7 +72,7 @@ def _definitions(root):
             raise ValueError(f"{path.name} 的 name 必须是非空文本")
         if not isinstance(kind, str) or kind not in KINDS:
             raise ValueError(f"{path.name} 的 kind 无效 {kind!r}")
-        project = _project(path.stem, name, kind)
+        project = _project(path.stem, name, kind, data.get("purpose", "other"))
         project["sources"] = _references(data, "sources")
         project["training_scripts"] = _references(data, "training", scripts=True)
         _assign(sources, project["sources"], project, "sources")
@@ -123,13 +132,14 @@ def validate_project_labels(payload, version_ids):
             raise ValueError(f"快照 {version_id} 的项目归属必须是非空列表")
         seen = set()
         for label in labels:
-            if not isinstance(label, dict) or set(label) - {"number"} != {"id", "name", "kind"}:
+            if not isinstance(label, dict) or set(label) - {"number", "purpose"} != {"id", "name", "kind"}:
                 raise ValueError(f"快照 {version_id} 的项目归属需要 id、name、kind")
             for field in ("id", "name"):
                 if not _label_text(label[field]):
                     raise ValueError(f"快照 {version_id} 的项目 {field} 无效")
             if "number" in label and (type(label["number"]) is not int or not 1 <= label["number"] < 2**53):
                 raise ValueError("共享版本号必须为正整数")
+            _purpose(label.get("purpose", "other"))
             kind = label["kind"]
             if not isinstance(kind, str) or kind not in KINDS:
                 raise ValueError(f"快照 {version_id} 的项目 kind 无效")
@@ -189,6 +199,8 @@ def _snapshots(root, projects_by_id, sources, scripts, job_projects, selected):
     by_training_name = defaultdict(dict)
     for script, project in scripts.items():
         by_training_name[f"训练 {PurePosixPath(script).stem}"][project["id"]] = project
+    from .sampling_probes import catalog as probe_catalog
+    probe_names = {"行为采样"} | {p["label"] for key, p in probe_catalog().items() if key != "lancer"}
     snapshots = _snapshot_records(root, selected)
     shared = _published_labels(root, {snapshot["id"] for snapshot in snapshots} - {"baseline"})
     for snapshot in snapshots:
@@ -207,7 +219,7 @@ def _snapshots(root, projects_by_id, sources, scripts, job_projects, selected):
         for label in shared.get(version_id, {}).values():
             project_id = label["id"]
             if project_id not in projects_by_id:
-                projects_by_id[project_id] = _project(project_id, label["name"], label["kind"])
+                projects_by_id[project_id] = _project(project_id, label["name"], label["kind"], label.get("purpose", "other"))
             matches[project_id] = projects_by_id[project_id]
         if not matches:
             training_matches = by_training_name[name]
@@ -215,7 +227,8 @@ def _snapshots(root, projects_by_id, sources, scripts, job_projects, selected):
                 matches.update(training_matches)
             else:
                 project_id = f"source:{name}"
-                project = projects_by_id.setdefault(project_id, _project(project_id, name))
+                purpose = "collection" if name in probe_names else "other"
+                project = projects_by_id.setdefault(project_id, _project(project_id, name, purpose=purpose))
                 matches[project_id] = project
         for project in matches.values():
             preferred = shared.get(version_id, {}).get(project["id"], {}).get("number")
@@ -428,7 +441,7 @@ def project_labels(root: Path, version_ids) -> dict:
     _, attached, _ = _strategy_index(root, selected)
     payload = {
         version_id: [
-            {key: project[key] for key in ("id", "name", "kind")} | {
+            {key: project[key] for key in ("id", "name", "kind", "purpose")} | {
                 "number": next(v["number"] for v in project["versions"] if v["id"] == version_id)
             }
             for project in sorted(attached[version_id], key=lambda project: project["id"])

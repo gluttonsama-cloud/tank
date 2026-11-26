@@ -1,0 +1,22 @@
+{
+  "seed": 910012116,
+  "policies": {
+    "A": "v-95fc56253d1072ce040ac55a63ecab1021fc7498d16f1847d566c9cf1deea96c",
+    "B": "v-0921b165f76c1e667e4b1ae1e22c35dd3ada329ae317800db44b1d71bcc6a174"
+  },
+  "parent": "sample-8a96573a1b794e729cfd6de082e68a0f",
+  "runs": {
+    "mid": "sample-89c4f3084ca949ec9ad6e67300b0604b",
+    "strong": "sample-0d0933c6a18f49f9b8fba680b89ddf38",
+    "boss": "sample-7744b9700860471eb6b2c0a1361c87c1",
+    "rookie": "sample-6228ecf53f354d89accc7bd5e7d313c0"
+  },
+  "prior_boss_B": [
+    23707,
+    23711
+  ],
+  "extra_runs": {
+    "mid": "sample-3e098e10b373423e97de0880840be7d6"
+  },
+  "router_version": "v-0e1d22f2a8b937eb52ae904d820a593fef8f42b3f08d875e4ae3a8fbf712a3d7"
+}

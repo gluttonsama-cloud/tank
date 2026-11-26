@@ -1,0 +1,7 @@
+{
+  "name": "按对手走位切换",
+  "kind": "hybrid",
+  "purpose": "pve",
+  "sources": ["style-switch"],
+  "training": []
+}
