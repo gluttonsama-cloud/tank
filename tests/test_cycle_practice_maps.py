@@ -6,7 +6,7 @@ import pytest
 from seedcup.game import SIDES, Game, generate_map, rules
 from seedcup.game.runner import match_info
 
-from tank import cycle_pve, cycle_store, sampling, sampling_data, versions
+from tank import cycle_experience, cycle_pve, cycle_store, sampling, sampling_data, versions
 
 PARENT = "sample-" + "1" * 32
 
@@ -151,7 +151,10 @@ def test_four_tier_gate_scores_archived_sdk_matches(tmp_path, monkeypatch):
     assert report["games"] == 80
     assert report["layout_deltas"] == {tier: [30.0] * 5 for tier in ("boss", "rookie", "mid", "strong")}
     assert report["estimated_40_game_gain"] == 1200
+    cycle_store.finish(tmp_path, "pve", {"round": 2, "candidate": "new", "incumbent": "old"}, "accepted", "完成复测")
     with sampling_data.database(tmp_path) as db:
+        assert not cycle_experience._closed_gate_games(tmp_path, db, 2)
+        assert set(cycle_experience._closed_gate_games(tmp_path, db, 3)) == set(range(45001, 45081))
         assert len(seen) == 20
         assert seen == {row[0] for row in db.execute("SELECT grid FROM sampling_holdouts")}
 

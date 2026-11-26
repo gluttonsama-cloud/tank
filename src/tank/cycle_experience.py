@@ -756,13 +756,40 @@ def _complete_series(root, games):
     return complete
 
 
-def _training_partitions(root, games):
+def _closed_gate_games(root, db, before_round):
+    from . import cycle_store
+    from .cycle_pve import _gate_batch
+
+    if not (cycle_store.folder(root)/"control.sqlite3").exists() or not db.execute(
+        "SELECT 1 FROM sqlite_master WHERE name='cycle_gate_maps'"
+    ).fetchone():
+        return {}
+    closed = {(item["round"],item["candidate"],item["incumbent"]) for item in cycle_store.history(root,"pve",-1)
+              if before_round is None or item["round"] < before_round}
+    result = {}
+    for number,parent,candidate,incumbent,tier,seed,grids in db.execute(
+        "SELECT round,parent,candidate,incumbent,tier,seed,grids FROM cycle_gate_maps"
+    ):
+        if (number,candidate,incumbent) not in closed:
+            continue
+        batch = _gate_batch(db,parent,candidate,incumbent,tier,seed)
+        if batch:
+            layouts = set(dict(json.loads(grids)).values())
+            for (mid,) in db.execute("SELECT id FROM slots WHERE run=?", (batch,)):
+                result[mid] = (number, layouts)
+    return result
+
+
+def _training_partitions(root, games, before_round=None):
     """Partition PvE by layout and PvP by opponent, applying live held-out exclusions."""
     path = root / ".local/sampling/samples.sqlite3"
+    released = {}
     if path.is_file():
         with closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as db, db:
             db.execute("BEGIN")
+            db.row_factory = sqlite3.Row
             _, layouts, holdouts, reserved = _sampling_policy(db)
+            released = _closed_gate_games(root,db,before_round)
     else:
         layouts, holdouts, reserved = {}, set(), set()
     pve = [game for game in games if game["scope"] == "practice"]
@@ -781,6 +808,13 @@ def _training_partitions(root, games):
                        for item in game["collections"])
                 or any(binding["id"] in reserved for binding in game["versions"].values())):
             pve_holdouts.add(grid)
+
+    for game in pve:
+        past = released.get(game["game_id"])
+        if (past and game["map"]["grid_sha256"] in past[1] and not game.get("collection_excluded")
+                and not game["collections"] and not any(v["id"] in reserved for v in game["versions"].values())):
+            eligible.add(game["game_id"])
+            game["map"].update(split="train",split_basis="completed_pve_gate",eligible_for_training=True)
 
     series = {}
     for series_id, members in _complete_series(root, games).items():
@@ -907,7 +941,7 @@ def report_watermark(root):
         return time()
 
 
-def summary(root, line="all", *, since=None, until=None, training_team_id=None, training_series_ids=None):
+def summary(root, line="all", *, since=None, until=None, training_team_id=None, training_series_ids=None, before_round=None):
     """Return representative official evidence, scoped scores and training coverage gaps."""
     root = Path(root).resolve()
     cutoff = float(since) if since is not None else None
@@ -917,7 +951,7 @@ def summary(root, line="all", *, since=None, until=None, training_team_id=None, 
         records = list(db.execute("SELECT id, report, error, ingested_at FROM games WHERE ingested_at<=? ORDER BY id DESC",
                                   (float("inf") if until is None else until,)))
     games = [json.loads(row["report"]) | {"ingested_at": row["ingested_at"]} for row in records if row["report"] is not None]
-    eligible, series = _training_partitions(root, games)
+    eligible, series = _training_partitions(root, games, before_round)
     failures = [{"game_id": row["id"], "error": row["error"]} for row in records
                 if row["error"] is not None and (cutoff is None or row["ingested_at"] > cutoff)]
     labels = _version_labels(root)
@@ -963,6 +997,9 @@ def summary(root, line="all", *, since=None, until=None, training_team_id=None, 
         "training_focus": _training_focus([game for game in corpus if game["game_id"] in eligible],
                                            training_team_id, None if training_series_ids is None else set(training_series_ids),
                                            target_filter),
+        "completed_gate_games": sum(g["map"].get("split_basis")=="completed_pve_gate" for g in corpus),
+        "completed_gate_focus": _training_focus([g for g in corpus if g["map"].get("split_basis")=="completed_pve_gate"],
+                                                training_team_id,None,target_filter) if line=="pve" else [],
         "pvp_splits": _pvp_split_summary(corpus, series),
         "coverage_by_scope": {name: {"games": len(group), "maps": len({game["map"]["grid_sha256"] for game in group}),
                                      "games_with_event": {event: sum(bool(game["events"].get(event)) for game in group)

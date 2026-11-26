@@ -112,7 +112,7 @@ def test_official_focus_is_only_mined_into_train(tmp_path, monkeypatch):
         {"game_id": 2, "split": "blind", "grid_sha256": grid, "map_seed": seed},
         {"game_id": 4, "split": "train", "grid_sha256": grid, "map_seed": seed},
     ]}]
-    monkeypatch.setattr(cycle_train.cycle_experience, "summary", lambda *_, **__: {"training_focus": focus})
+    monkeypatch.setattr(cycle_train.cycle_experience, "summary", lambda *_, **__: {"training_focus": [], "completed_gate_focus": focus})
     feedback = cycle_train._feedback(tmp_path, "pve", 4)
     cases = cycle_train._feedback_cases(feedback, "pve", {"v31": "frozen"}, 1)
     assert [(style, game[0].side, game[0].map_seed) for style, game in cases] == [

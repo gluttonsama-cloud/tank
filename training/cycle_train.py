@@ -262,7 +262,12 @@ def _feedback(root, line, round_number):
             break
     team = root / ".local/online/team-scores.json"
     team_filter = read_json(team).get("team_id") if line == "pvp" and team.is_file() else None
-    focus = cycle_experience.summary(root, line, training_team_id=team_filter)["training_focus"]
+    evidence = cycle_experience.summary(root, line, training_team_id=team_filter,
+                                       before_round=round_number if line=="pve" else None)
+    focus = evidence["training_focus"]
+    if line=="pve" and evidence["completed_gate_focus"]:
+        past = evidence["completed_gate_focus"]
+        focus = [next((item for item in past if item["target"]=="boss"),past[0]), *focus]
     return {"weak_styles": weak_styles, "carryover": carryover, "transfer": transfer, "experience": focus}
 
 
