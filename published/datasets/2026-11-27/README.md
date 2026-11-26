@@ -25,3 +25,5 @@
 历史终极档行为集 `boss-behavior-20261125` 已随 `feat/workbench` 推到远端。
 
 历史本地评测批次可通过 `tank sync fetch <批次ID>` 导入工作台。本次压缩包适合直接读取逐局记录、训练分析和回放查看。解压目录按用途和对局 ID 查询即可。
+
+策略快照中有 97 份通过原始文件哈希校验，可解压至本机 `.local/versions/`。清单中 `sanitized_or_incomplete` 列出的 2 份供分析使用。

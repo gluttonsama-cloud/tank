@@ -767,11 +767,18 @@
     },
     "snapshots-01.zip": {
       "files": 1136,
-      "bytes": 24957884,
-      "sha256": "59a03694608d965df87896c1c57124c38e60a2de22fb41dea192176714dc3665",
+      "bytes": 25041308,
+      "sha256": "37a6aefeb274f24976e59c33e08750c1dda1e5b02c78931d24a55592c2480298",
       "paths": {
         "versions": 1136
       }
     }
+  },
+  "snapshots": {
+    "verified": 97,
+    "sanitized_or_incomplete": [
+      "v-0e1d22f2a8b937eb52ae904d820a593fef8f42b3f08d875e4ae3a8fbf712a3d7",
+      "v-c57db201c09bbc5d4651c806869aa1751a523283e594854326922ae4f5f5b7ab"
+    ]
   }
 }
